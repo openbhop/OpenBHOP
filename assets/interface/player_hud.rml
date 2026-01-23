@@ -1,0 +1,11 @@
+<rml>
+<head>
+    <title>Player HUD</title>
+    <link type="text/rcss" href="player_hud.rcss" />
+</head>
+<body data-model="player">
+    <div id="hud">
+        <p class="hud_line"><span class="value">{{ speed }}</span></p>
+    </div>
+</body>
+</rml>

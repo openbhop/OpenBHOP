@@ -1,0 +1,3 @@
+BasedOnStyle: Microsoft
+IndentWidth: 4
+# Add only the specific things you want to change from Google style here

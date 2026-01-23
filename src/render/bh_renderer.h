@@ -1,0 +1,82 @@
+/* -----------------------------------------------------------------------------
+   bh_renderer.h
+   ----------------------------------------------------------------------------- */
+#pragma once
+
+#include "bh_material.h"
+#include "bh_mesh.h"
+#include "bh_shader_program.h"
+
+#include "bh_material_manager.h"
+#include "bh_texture_manager.h"
+
+#include "../core/bh_arena.h"
+#include "../math/bh_math.h"
+
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_gpu.h>
+
+struct BH_Scene;
+
+typedef struct BH_RendererConfig
+{
+    bool debug_gpu;
+} BH_RendererConfig;
+
+/* Render Pass Injection Hooks
+   Renderer-agnostic callbacks for overlays, gizmos, and post-scene logic.
+   Callbacks execute on the render thread.
+*/
+typedef struct BH_RenderPassHooks
+{
+    /* Pre-pass: GPU copy/upload operations. */
+    void (*prepare)(void *user, SDL_GPUCommandBuffer *cmd, SDL_GPUCopyPass *copy_pass, const mat4 *view_proj,
+                    uint32_t fb_width, uint32_t fb_height, float alpha);
+
+    /* Main pass: Post-scene draw commands. */
+    void (*draw)(void *user, SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *render_pass, const mat4 *view_proj,
+                 uint32_t fb_width, uint32_t fb_height, float alpha);
+
+    /* Post-submission: Resource cleanup (transfer buffers). */
+    void (*end_frame)(void *user, bool submit_ok);
+
+    void *user;
+} BH_RenderPassHooks;
+
+typedef struct BH_Renderer
+{
+    SDL_GPUDevice *device;
+    SDL_Window *window;
+
+    SDL_GPUTextureFormat swapchain_format;
+    SDL_GPUTextureFormat depth_format;
+
+    SDL_GPUTexture *depth_texture;
+    uint32_t depth_width;
+    uint32_t depth_height;
+
+    /* Programs */
+    BH_ShaderProgram program;             /* Opaque */
+    BH_ShaderProgram program_transparent; /* Alpha Blended */
+    BH_ShaderProgram program_skybox;      /* Procedural Sky */
+
+    /* Resources */
+    BH_Mesh skybox_mesh;
+    bool skybox_mesh_created;
+
+    BH_TextureManager textures;
+    BH_MaterialManager materials;
+
+    BH_RenderPassHooks hooks[16];
+    uint32_t hook_count;
+} BH_Renderer;
+
+bool BH_Renderer_AddHooks(BH_Renderer *r, BH_RenderPassHooks hooks);
+
+bool BH_Renderer_Init(BH_Renderer *r, SDL_Window *window, const char *asset_root, const BH_RendererConfig *cfg,
+                      BH_Arena *permanent_arena);
+
+void BH_Renderer_Shutdown(BH_Renderer *r);
+
+void BH_Renderer_RenderScene(BH_Renderer *r, const struct BH_Scene *scene, const mat4 *view_proj, vec3 camera_pos,
+                             float alpha);

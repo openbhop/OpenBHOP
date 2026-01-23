@@ -1,0 +1,29 @@
+body {
+	font-family: Tahoma;
+	font-weight: 600;
+	font-size: 15px;
+	color: #00ff55;
+	width: 100%;
+	height: 100%;
+	box-sizing: border-box;
+	z-index: 999;
+	
+	/* This overlay should never steal mouse input from the game. */
+	pointer-events: none;
+}
+
+#fps_panel {
+	position: absolute;
+	left: 0;
+	top: 0;
+	padding: 4dp 8dp;
+	box-sizing: border-box;
+	background-color: rgba(0, 0, 0, 190);
+	border: 1px rgba(0, 255, 120, 60);
+	border-radius: 4dp;
+}
+
+#fps_text {
+	margin: 0px;
+	font-effect: shadow(1px 1px black);
+}

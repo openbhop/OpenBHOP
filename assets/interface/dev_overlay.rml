@@ -1,0 +1,12 @@
+<rml>
+  <head>
+    <title>Developer Overlay</title>
+    <link type="text/rcss" href="dev_overlay.rcss" />
+  </head>
+
+  <body>
+    <div id="fps_panel">
+      <p id="fps_text">0 FPS (0.0 ms)</p>
+    </div>
+  </body>
+</rml>

@@ -1,0 +1,8 @@
+[submodule "extern/sdl3"]
+	path = extern/sdl3
+	url = https://github.com/libsdl-org/SDL.git
+	branch = release-3.4.x
+[submodule "extern/interface"]
+	path = extern/interface
+	url = https://github.com/openbhop/Interface.git
+	branch = master

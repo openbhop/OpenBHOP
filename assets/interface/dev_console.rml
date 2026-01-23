@@ -1,0 +1,22 @@
+<rml>
+  <head>
+    <title>Developer Console</title>
+    <link type="text/rcss" href="dev_console.rcss" />
+  </head>
+
+  <body>
+    <div id="console_root">
+      <div id="console_header">
+        <p id="console_title">DEVELOPER CONSOLE</p>
+        <p id="console_hint">` to close • Enter to submit • Up/Down history</p>
+      </div>
+
+      <div id="console_log"></div>
+
+      <div id="console_input_row">
+        <p id="console_prompt">]</p>
+        <input id="console_input" type="text" />
+      </div>
+    </div>
+  </body>
+</rml>

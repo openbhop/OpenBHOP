@@ -1,0 +1,1964 @@
+{
+  "Name": "Untitled",
+  "CoordinateSystem": "source",
+  "FormatVersion": 2,
+  "Root": {
+    "UniqueId": 0,
+    "Name": "Root",
+    "Children": [
+      {
+        "UniqueId": 1,
+        "Name": "World",
+        "Children": [
+          {
+            "$type": "Solid",
+            "UniqueId": 100,
+            "Name": "Solid 0",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": -1280, "y": -1280, "z": -9.15527344e-05 },
+              { "x": 1216, "y": -1280, "z": 3.05175781e-05 },
+              { "x": 1216, "y": 1440, "z": 3.05175781e-05 },
+              { "x": -1280, "y": 1440, "z": -9.15527344e-05 },
+              { "x": -1280, "y": -1280, "z": 32 },
+              { "x": 1216, "y": -1280, "z": 32 },
+              { "x": 1216, "y": 1440, "z": 32 },
+              { "x": -1280, "y": 1440, "z": 32 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": -10240, "y": 0.000244140625 } },
+                  { "Index": 2, "DiffuseUv": { "x": 11520, "y": 0.000244140625 } },
+                  { "Index": 6, "DiffuseUv": { "x": 11520, "y": 256 } },
+                  { "Index": 5, "DiffuseUv": { "x": -10240, "y": 256 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": 10240, "y": -0.000732421875 } },
+                  { "Index": 4, "DiffuseUv": { "x": 10240, "y": 256 } },
+                  { "Index": 7, "DiffuseUv": { "x": -11520, "y": 256 } },
+                  { "Index": 3, "DiffuseUv": { "x": -11520, "y": -0.000732421875 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 10240, "y": -0.000732421875 } },
+                  { "Index": 7, "DiffuseUv": { "x": 10240, "y": 256 } },
+                  { "Index": 6, "DiffuseUv": { "x": -9728, "y": 256 } },
+                  { "Index": 2, "DiffuseUv": { "x": -9728, "y": 0.000244140625 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -10240, "y": -0.000732421875 } },
+                  { "Index": 1, "DiffuseUv": { "x": 9728, "y": 0.000244140625 } },
+                  { "Index": 5, "DiffuseUv": { "x": 9728, "y": 256 } },
+                  { "Index": 4, "DiffuseUv": { "x": -10240, "y": 256 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -10240, "y": -10240 } },
+                  { "Index": 5, "DiffuseUv": { "x": 9728, "y": -10240 } },
+                  { "Index": 6, "DiffuseUv": { "x": 9728, "y": 11520 } },
+                  { "Index": 7, "DiffuseUv": { "x": -10240, "y": 11520 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": 10240, "y": -10240 } },
+                  { "Index": 3, "DiffuseUv": { "x": 10240, "y": 11520 } },
+                  { "Index": 2, "DiffuseUv": { "x": -9728, "y": 11520 } },
+                  { "Index": 1, "DiffuseUv": { "x": -9728, "y": -10240 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 101,
+            "Name": "Solid 1",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": -320, "y": -192, "z": 31.9999847 },
+              { "x": -256, "y": -192, "z": 31.9999847 },
+              { "x": -256, "y": -128, "z": 31.9999847 },
+              { "x": -320, "y": -128, "z": 31.9999847 },
+              { "x": -320, "y": -192, "z": 64 },
+              { "x": -256, "y": -192, "z": 64 },
+              { "x": -256, "y": -128, "z": 64 },
+              { "x": -320, "y": -128, "z": 64 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": -1536, "y": 255.999878 } },
+                  { "Index": 2, "DiffuseUv": { "x": -1024, "y": 255.999878 } },
+                  { "Index": 6, "DiffuseUv": { "x": -1024, "y": 512 } },
+                  { "Index": 5, "DiffuseUv": { "x": -1536, "y": 512 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": 1536, "y": 255.999878 } },
+                  { "Index": 4, "DiffuseUv": { "x": 1536, "y": 512 } },
+                  { "Index": 7, "DiffuseUv": { "x": 1024, "y": 512 } },
+                  { "Index": 3, "DiffuseUv": { "x": 1024, "y": 255.999878 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 2560, "y": 255.999878 } },
+                  { "Index": 7, "DiffuseUv": { "x": 2560, "y": 512 } },
+                  { "Index": 6, "DiffuseUv": { "x": 2048, "y": 512 } },
+                  { "Index": 2, "DiffuseUv": { "x": 2048, "y": 255.999878 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -2560, "y": 255.999878 } },
+                  { "Index": 1, "DiffuseUv": { "x": -2048, "y": 255.999878 } },
+                  { "Index": 5, "DiffuseUv": { "x": -2048, "y": 512 } },
+                  { "Index": 4, "DiffuseUv": { "x": -2560, "y": 512 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_orange", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -2560, "y": -1536 } },
+                  { "Index": 5, "DiffuseUv": { "x": -2048, "y": -1536 } },
+                  { "Index": 6, "DiffuseUv": { "x": -2048, "y": -1024 } },
+                  { "Index": 7, "DiffuseUv": { "x": -2560, "y": -1024 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": 2560, "y": -1536 } },
+                  { "Index": 3, "DiffuseUv": { "x": 2560, "y": -1024 } },
+                  { "Index": 2, "DiffuseUv": { "x": 2048, "y": -1024 } },
+                  { "Index": 1, "DiffuseUv": { "x": 2048, "y": -1536 } }
+                ]
+              }
+            ],
+            "Entity": {
+              "$type": "Entity",
+              "UniqueId": 10002,
+              "Name": "Brush - Measure",
+              "Children": [],
+              "ClassName": "brush_measure",
+              "Bounds": { "center": { "x": -288, "y": -160, "z": 47.9999924 }, "extents": { "x": 32, "y": 32, "z": 16.0000076 } },
+              "KeyValuePairs": {
+                "MeasureX": "True",
+                "MeasureY": "True",
+                "MeasureZ": "True",
+                "TargetName": "",
+                "Enabled": "True"
+              }
+            }
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 102,
+            "Name": "Solid 2",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": -512, "y": -192, "z": 31.9999847 },
+              { "x": -448, "y": -192, "z": 31.9999847 },
+              { "x": -448, "y": -128, "z": 31.9999847 },
+              { "x": -512, "y": -128, "z": 31.9999847 },
+              { "x": -512, "y": -192, "z": 160 },
+              { "x": -448, "y": -192, "z": 160 },
+              { "x": -448, "y": -128, "z": 160 },
+              { "x": -512, "y": -128, "z": 160 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": -1536, "y": 255.999878 } },
+                  { "Index": 2, "DiffuseUv": { "x": -1024, "y": 255.999878 } },
+                  { "Index": 6, "DiffuseUv": { "x": -1024, "y": 1280 } },
+                  { "Index": 5, "DiffuseUv": { "x": -1536, "y": 1280 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": 1536, "y": 255.999878 } },
+                  { "Index": 4, "DiffuseUv": { "x": 1536, "y": 1280 } },
+                  { "Index": 7, "DiffuseUv": { "x": 1024, "y": 1280 } },
+                  { "Index": 3, "DiffuseUv": { "x": 1024, "y": 255.999878 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 4096, "y": 255.999878 } },
+                  { "Index": 7, "DiffuseUv": { "x": 4096, "y": 1280 } },
+                  { "Index": 6, "DiffuseUv": { "x": 3584, "y": 1280 } },
+                  { "Index": 2, "DiffuseUv": { "x": 3584, "y": 255.999878 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -4096, "y": 255.999878 } },
+                  { "Index": 1, "DiffuseUv": { "x": -3584, "y": 255.999878 } },
+                  { "Index": 5, "DiffuseUv": { "x": -3584, "y": 1280 } },
+                  { "Index": 4, "DiffuseUv": { "x": -4096, "y": 1280 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_orange", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -4096, "y": -1536 } },
+                  { "Index": 5, "DiffuseUv": { "x": -3584, "y": -1536 } },
+                  { "Index": 6, "DiffuseUv": { "x": -3584, "y": -1024 } },
+                  { "Index": 7, "DiffuseUv": { "x": -4096, "y": -1024 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": 4096, "y": -1536 } },
+                  { "Index": 3, "DiffuseUv": { "x": 4096, "y": -1024 } },
+                  { "Index": 2, "DiffuseUv": { "x": 3584, "y": -1024 } },
+                  { "Index": 1, "DiffuseUv": { "x": 3584, "y": -1536 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 103,
+            "Name": "Solid 3",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": -448, "y": 192, "z": 32 },
+              { "x": -416, "y": 192, "z": 32 },
+              { "x": -416, "y": 416, "z": 32 },
+              { "x": -448, "y": 416, "z": 32 },
+              { "x": -448, "y": 192, "z": 48 },
+              { "x": -416, "y": 192, "z": 48 },
+              { "x": -416, "y": 416, "z": 48 },
+              { "x": -448, "y": 416, "z": 48 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": 1536, "y": 256 } },
+                  { "Index": 2, "DiffuseUv": { "x": 3328, "y": 256 } },
+                  { "Index": 6, "DiffuseUv": { "x": 3328, "y": 384 } },
+                  { "Index": 5, "DiffuseUv": { "x": 1536, "y": 384 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -1536, "y": 256 } },
+                  { "Index": 4, "DiffuseUv": { "x": -1536, "y": 384 } },
+                  { "Index": 7, "DiffuseUv": { "x": -3328, "y": 384 } },
+                  { "Index": 3, "DiffuseUv": { "x": -3328, "y": 256 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 3584, "y": 256 } },
+                  { "Index": 7, "DiffuseUv": { "x": 3584, "y": 384 } },
+                  { "Index": 6, "DiffuseUv": { "x": 3328, "y": 384 } },
+                  { "Index": 2, "DiffuseUv": { "x": 3328, "y": 256 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -3584, "y": 256 } },
+                  { "Index": 1, "DiffuseUv": { "x": -3328, "y": 256 } },
+                  { "Index": 5, "DiffuseUv": { "x": -3328, "y": 384 } },
+                  { "Index": 4, "DiffuseUv": { "x": -3584, "y": 384 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_orange", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -3584, "y": 1536 } },
+                  { "Index": 5, "DiffuseUv": { "x": -3328, "y": 1536 } },
+                  { "Index": 6, "DiffuseUv": { "x": -3328, "y": 3328 } },
+                  { "Index": 7, "DiffuseUv": { "x": -3584, "y": 3328 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": 3584, "y": 1536 } },
+                  { "Index": 3, "DiffuseUv": { "x": 3584, "y": 3328 } },
+                  { "Index": 2, "DiffuseUv": { "x": 3328, "y": 3328 } },
+                  { "Index": 1, "DiffuseUv": { "x": 3328, "y": 1536 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 104,
+            "Name": "Solid 4",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": -480, "y": 192, "z": 48 },
+              { "x": -448, "y": 192, "z": 48 },
+              { "x": -448, "y": 416, "z": 48 },
+              { "x": -480, "y": 416, "z": 48 },
+              { "x": -480, "y": 192, "z": 63.9999962 },
+              { "x": -448, "y": 192, "z": 63.9999962 },
+              { "x": -448, "y": 416, "z": 63.9999962 },
+              { "x": -480, "y": 416, "z": 63.9999962 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": 1536, "y": 384 } },
+                  { "Index": 2, "DiffuseUv": { "x": 3328, "y": 384 } },
+                  { "Index": 6, "DiffuseUv": { "x": 3328, "y": 511.999969 } },
+                  { "Index": 5, "DiffuseUv": { "x": 1536, "y": 511.999969 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -1536, "y": 384 } },
+                  { "Index": 4, "DiffuseUv": { "x": -1536, "y": 511.999969 } },
+                  { "Index": 7, "DiffuseUv": { "x": -3328, "y": 511.999969 } },
+                  { "Index": 3, "DiffuseUv": { "x": -3328, "y": 384 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 3840, "y": 384 } },
+                  { "Index": 7, "DiffuseUv": { "x": 3840, "y": 511.999969 } },
+                  { "Index": 6, "DiffuseUv": { "x": 3584, "y": 511.999969 } },
+                  { "Index": 2, "DiffuseUv": { "x": 3584, "y": 384 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -3840, "y": 384 } },
+                  { "Index": 1, "DiffuseUv": { "x": -3584, "y": 384 } },
+                  { "Index": 5, "DiffuseUv": { "x": -3584, "y": 511.999969 } },
+                  { "Index": 4, "DiffuseUv": { "x": -3840, "y": 511.999969 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_orange", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -3840, "y": 1536 } },
+                  { "Index": 5, "DiffuseUv": { "x": -3584, "y": 1536 } },
+                  { "Index": 6, "DiffuseUv": { "x": -3584, "y": 3328 } },
+                  { "Index": 7, "DiffuseUv": { "x": -3840, "y": 3328 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": 3840, "y": 1536 } },
+                  { "Index": 3, "DiffuseUv": { "x": 3840, "y": 3328 } },
+                  { "Index": 2, "DiffuseUv": { "x": 3584, "y": 3328 } },
+                  { "Index": 1, "DiffuseUv": { "x": 3584, "y": 1536 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 105,
+            "Name": "Solid 5",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": -512, "y": 192, "z": 63.9999962 },
+              { "x": -480, "y": 192, "z": 63.9999962 },
+              { "x": -480, "y": 416, "z": 63.9999962 },
+              { "x": -512, "y": 416, "z": 63.9999962 },
+              { "x": -512, "y": 192, "z": 79.9999847 },
+              { "x": -480, "y": 192, "z": 79.9999847 },
+              { "x": -480, "y": 416, "z": 79.9999847 },
+              { "x": -512, "y": 416, "z": 79.9999847 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": 1536, "y": 511.999969 } },
+                  { "Index": 2, "DiffuseUv": { "x": 3328, "y": 511.999969 } },
+                  { "Index": 6, "DiffuseUv": { "x": 3328, "y": 639.999878 } },
+                  { "Index": 5, "DiffuseUv": { "x": 1536, "y": 639.999878 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -1536, "y": 511.999969 } },
+                  { "Index": 4, "DiffuseUv": { "x": -1536, "y": 639.999878 } },
+                  { "Index": 7, "DiffuseUv": { "x": -3328, "y": 639.999878 } },
+                  { "Index": 3, "DiffuseUv": { "x": -3328, "y": 511.999969 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 4096, "y": 511.999969 } },
+                  { "Index": 7, "DiffuseUv": { "x": 4096, "y": 639.999878 } },
+                  { "Index": 6, "DiffuseUv": { "x": 3840, "y": 639.999878 } },
+                  { "Index": 2, "DiffuseUv": { "x": 3840, "y": 511.999969 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -4096, "y": 511.999969 } },
+                  { "Index": 1, "DiffuseUv": { "x": -3840, "y": 511.999969 } },
+                  { "Index": 5, "DiffuseUv": { "x": -3840, "y": 639.999878 } },
+                  { "Index": 4, "DiffuseUv": { "x": -4096, "y": 639.999878 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_orange", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -4096, "y": 1536 } },
+                  { "Index": 5, "DiffuseUv": { "x": -3840, "y": 1536 } },
+                  { "Index": 6, "DiffuseUv": { "x": -3840, "y": 3328 } },
+                  { "Index": 7, "DiffuseUv": { "x": -4096, "y": 3328 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": 4096, "y": 1536 } },
+                  { "Index": 3, "DiffuseUv": { "x": 4096, "y": 3328 } },
+                  { "Index": 2, "DiffuseUv": { "x": 3840, "y": 3328 } },
+                  { "Index": 1, "DiffuseUv": { "x": 3840, "y": 1536 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 106,
+            "Name": "Solid 6",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": -544, "y": 192, "z": 79.9999847 },
+              { "x": -512, "y": 192, "z": 79.9999847 },
+              { "x": -512, "y": 416, "z": 79.9999847 },
+              { "x": -544, "y": 416, "z": 79.9999847 },
+              { "x": -544, "y": 192, "z": 95.9999695 },
+              { "x": -512, "y": 192, "z": 95.9999695 },
+              { "x": -512, "y": 416, "z": 95.9999695 },
+              { "x": -544, "y": 416, "z": 95.9999695 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": 1536, "y": 639.999878 } },
+                  { "Index": 2, "DiffuseUv": { "x": 3328, "y": 639.999878 } },
+                  { "Index": 6, "DiffuseUv": { "x": 3328, "y": 767.999756 } },
+                  { "Index": 5, "DiffuseUv": { "x": 1536, "y": 767.999756 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -1536, "y": 639.999878 } },
+                  { "Index": 4, "DiffuseUv": { "x": -1536, "y": 767.999756 } },
+                  { "Index": 7, "DiffuseUv": { "x": -3328, "y": 767.999756 } },
+                  { "Index": 3, "DiffuseUv": { "x": -3328, "y": 639.999878 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 4352, "y": 639.999878 } },
+                  { "Index": 7, "DiffuseUv": { "x": 4352, "y": 767.999756 } },
+                  { "Index": 6, "DiffuseUv": { "x": 4096, "y": 767.999756 } },
+                  { "Index": 2, "DiffuseUv": { "x": 4096, "y": 639.999878 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -4352, "y": 639.999878 } },
+                  { "Index": 1, "DiffuseUv": { "x": -4096, "y": 639.999878 } },
+                  { "Index": 5, "DiffuseUv": { "x": -4096, "y": 767.999756 } },
+                  { "Index": 4, "DiffuseUv": { "x": -4352, "y": 767.999756 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_orange", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -4352, "y": 1536 } },
+                  { "Index": 5, "DiffuseUv": { "x": -4096, "y": 1536 } },
+                  { "Index": 6, "DiffuseUv": { "x": -4096, "y": 3328 } },
+                  { "Index": 7, "DiffuseUv": { "x": -4352, "y": 3328 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": 4352, "y": 1536 } },
+                  { "Index": 3, "DiffuseUv": { "x": 4352, "y": 3328 } },
+                  { "Index": 2, "DiffuseUv": { "x": 4096, "y": 3328 } },
+                  { "Index": 1, "DiffuseUv": { "x": 4096, "y": 1536 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 107,
+            "Name": "Solid 7",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": -576, "y": 192, "z": 95.9999695 },
+              { "x": -544, "y": 192, "z": 95.9999695 },
+              { "x": -544, "y": 416, "z": 95.9999695 },
+              { "x": -576, "y": 416, "z": 95.9999695 },
+              { "x": -576, "y": 192, "z": 111.999954 },
+              { "x": -544, "y": 192, "z": 111.999954 },
+              { "x": -544, "y": 416, "z": 111.999954 },
+              { "x": -576, "y": 416, "z": 111.999954 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": 1536, "y": 767.999756 } },
+                  { "Index": 2, "DiffuseUv": { "x": 3328, "y": 767.999756 } },
+                  { "Index": 6, "DiffuseUv": { "x": 3328, "y": 895.999634 } },
+                  { "Index": 5, "DiffuseUv": { "x": 1536, "y": 895.999634 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -1536, "y": 767.999756 } },
+                  { "Index": 4, "DiffuseUv": { "x": -1536, "y": 895.999634 } },
+                  { "Index": 7, "DiffuseUv": { "x": -3328, "y": 895.999634 } },
+                  { "Index": 3, "DiffuseUv": { "x": -3328, "y": 767.999756 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 4608, "y": 767.999756 } },
+                  { "Index": 7, "DiffuseUv": { "x": 4608, "y": 895.999634 } },
+                  { "Index": 6, "DiffuseUv": { "x": 4352, "y": 895.999634 } },
+                  { "Index": 2, "DiffuseUv": { "x": 4352, "y": 767.999756 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -4608, "y": 767.999756 } },
+                  { "Index": 1, "DiffuseUv": { "x": -4352, "y": 767.999756 } },
+                  { "Index": 5, "DiffuseUv": { "x": -4352, "y": 895.999634 } },
+                  { "Index": 4, "DiffuseUv": { "x": -4608, "y": 895.999634 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_orange", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -4608, "y": 1536 } },
+                  { "Index": 5, "DiffuseUv": { "x": -4352, "y": 1536 } },
+                  { "Index": 6, "DiffuseUv": { "x": -4352, "y": 3328 } },
+                  { "Index": 7, "DiffuseUv": { "x": -4608, "y": 3328 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": 4608, "y": 1536 } },
+                  { "Index": 3, "DiffuseUv": { "x": 4608, "y": 3328 } },
+                  { "Index": 2, "DiffuseUv": { "x": 4352, "y": 3328 } },
+                  { "Index": 1, "DiffuseUv": { "x": 4352, "y": 1536 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 108,
+            "Name": "Solid 8",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": -576, "y": 192, "z": 32 },
+              { "x": -576, "y": 192, "z": 111.999954 },
+              { "x": -576, "y": 416, "z": 111.999954 },
+              { "x": -576, "y": 416, "z": 32 },
+              { "x": -608, "y": 192, "z": 32 },
+              { "x": -608, "y": 192, "z": 111.999954 },
+              { "x": -608, "y": 416, "z": 111.999954 },
+              { "x": -608, "y": 416, "z": 32 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 3328, "y": 256 } },
+                  { "Index": 2, "DiffuseUv": { "x": 3328, "y": 895.999634 } },
+                  { "Index": 1, "DiffuseUv": { "x": 1536, "y": 895.999634 } },
+                  { "Index": 0, "DiffuseUv": { "x": 1536, "y": 256 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -1536, "y": 256 } },
+                  { "Index": 5, "DiffuseUv": { "x": -1536, "y": 895.999634 } },
+                  { "Index": 6, "DiffuseUv": { "x": -3328, "y": 895.999634 } },
+                  { "Index": 7, "DiffuseUv": { "x": -3328, "y": 256 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -4608, "y": 256 } },
+                  { "Index": 1, "DiffuseUv": { "x": -4608, "y": 895.999634 } },
+                  { "Index": 5, "DiffuseUv": { "x": -4864, "y": 895.999634 } },
+                  { "Index": 4, "DiffuseUv": { "x": -4864, "y": 256 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_orange", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": -4608, "y": 1536 } },
+                  { "Index": 2, "DiffuseUv": { "x": -4608, "y": 3328 } },
+                  { "Index": 6, "DiffuseUv": { "x": -4864, "y": 3328 } },
+                  { "Index": 5, "DiffuseUv": { "x": -4864, "y": 1536 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 2, "DiffuseUv": { "x": 4608, "y": 895.999634 } },
+                  { "Index": 3, "DiffuseUv": { "x": 4608, "y": 256 } },
+                  { "Index": 7, "DiffuseUv": { "x": 4864, "y": 256 } },
+                  { "Index": 6, "DiffuseUv": { "x": 4864, "y": 895.999634 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 4608, "y": 3328 } },
+                  { "Index": 0, "DiffuseUv": { "x": 4608, "y": 1536 } },
+                  { "Index": 4, "DiffuseUv": { "x": 4864, "y": 1536 } },
+                  { "Index": 7, "DiffuseUv": { "x": 4864, "y": 3328 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 109,
+            "Name": "Solid 9",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": -800, "y": 1023.99994, "z": 48.0000496 },
+              { "x": -800, "y": 1024, "z": 32.0000305 },
+              { "x": -800, "y": -1023.99994, "z": 48.0000496 },
+              { "x": -800, "y": -1024, "z": 32.0000305 },
+              { "x": -1024, "y": 1024, "z": 32.0000305 },
+              { "x": -1024, "y": 1024, "z": 288.001953 },
+              { "x": -1024, "y": -1024, "z": 32.0000305 },
+              { "x": -1024, "y": -1024, "z": 288.001953 },
+              { "x": -1007.99994, "y": 1023.99994, "z": 288.001923 },
+              { "x": -1007.99994, "y": -1023.99994, "z": 288.001923 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/dev_orange", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": -8192, "y": 256.000244 } },
+                  { "Index": 1, "DiffuseUv": { "x": 8192, "y": 256.000244 } },
+                  { "Index": 0, "DiffuseUv": { "x": 8191.99951, "y": 384.000397 } },
+                  { "Index": 2, "DiffuseUv": { "x": -8191.99951, "y": 384.000397 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_orange", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -8192, "y": 256.000244 } },
+                  { "Index": 6, "DiffuseUv": { "x": 8192, "y": 256.000244 } },
+                  { "Index": 7, "DiffuseUv": { "x": 8192, "y": 2304.01562 } },
+                  { "Index": 5, "DiffuseUv": { "x": -8192, "y": 2304.01562 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_orange", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": 6400, "y": 383.969147 } },
+                  { "Index": 1, "DiffuseUv": { "x": 6400, "y": 255.968994 } },
+                  { "Index": 4, "DiffuseUv": { "x": 8192, "y": 255.968994 } },
+                  { "Index": 5, "DiffuseUv": { "x": 8192, "y": 2303.98438 } },
+                  { "Index": 8, "DiffuseUv": { "x": 8063.99951, "y": 2303.98413 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_orange", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 6, "DiffuseUv": { "x": -8192, "y": 255.968994 } },
+                  { "Index": 3, "DiffuseUv": { "x": -6400, "y": 255.968994 } },
+                  { "Index": 2, "DiffuseUv": { "x": -6400, "y": 383.969147 } },
+                  { "Index": 9, "DiffuseUv": { "x": -8063.99951, "y": 2303.98413 } },
+                  { "Index": 7, "DiffuseUv": { "x": -8192, "y": 2303.98438 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 2, "DiffuseUv": { "x": -8191.99951, "y": 4481.72217 } },
+                  { "Index": 0, "DiffuseUv": { "x": 8191.99951, "y": 4481.72217 } },
+                  { "Index": 8, "DiffuseUv": { "x": 8191.99951, "y": 7022.46045 } },
+                  { "Index": 9, "DiffuseUv": { "x": -8191.99951, "y": 7022.46045 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "DEV/GRAY", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 6400, "y": -8192 } },
+                  { "Index": 6, "DiffuseUv": { "x": 8192, "y": -8192 } },
+                  { "Index": 4, "DiffuseUv": { "x": 8192, "y": 8192 } },
+                  { "Index": 1, "DiffuseUv": { "x": 6400, "y": 8192 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_orange", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 7, "DiffuseUv": { "x": -8192.00488, "y": -8192 } },
+                  { "Index": 9, "DiffuseUv": { "x": -8064.00391, "y": -8191.99951 } },
+                  { "Index": 8, "DiffuseUv": { "x": -8064.00391, "y": 8191.99951 } },
+                  { "Index": 5, "DiffuseUv": { "x": -8192.00488, "y": 8192 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 110,
+            "Name": "Solid 10",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": -608, "y": 448, "z": 16 },
+              { "x": -416, "y": 448, "z": 16 },
+              { "x": -416, "y": 672, "z": 16 },
+              { "x": -608, "y": 672, "z": 16 },
+              { "x": -608, "y": 448, "z": 112.000008 },
+              { "x": -416, "y": 448, "z": 32 },
+              { "x": -416, "y": 672, "z": 32 },
+              { "x": -608, "y": 672, "z": 112.000008 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": 3584, "y": 128 } },
+                  { "Index": 2, "DiffuseUv": { "x": 5376, "y": 128 } },
+                  { "Index": 6, "DiffuseUv": { "x": 5376, "y": 256 } },
+                  { "Index": 5, "DiffuseUv": { "x": 3584, "y": 256 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -3584, "y": 128 } },
+                  { "Index": 4, "DiffuseUv": { "x": -3584, "y": 896.000061 } },
+                  { "Index": 7, "DiffuseUv": { "x": -5376, "y": 896.000061 } },
+                  { "Index": 3, "DiffuseUv": { "x": -5376, "y": 128 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 4864, "y": 128 } },
+                  { "Index": 7, "DiffuseUv": { "x": 4864, "y": 896.000061 } },
+                  { "Index": 6, "DiffuseUv": { "x": 3328, "y": 256 } },
+                  { "Index": 2, "DiffuseUv": { "x": 3328, "y": 128 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -4864, "y": 128 } },
+                  { "Index": 1, "DiffuseUv": { "x": -3328, "y": 128 } },
+                  { "Index": 5, "DiffuseUv": { "x": -3328, "y": 256 } },
+                  { "Index": 4, "DiffuseUv": { "x": -4864, "y": 896.000061 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_orange", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": 3584, "y": 4834.46191 } },
+                  { "Index": 5, "DiffuseUv": { "x": 3584, "y": 3170.46167 } },
+                  { "Index": 6, "DiffuseUv": { "x": 5376, "y": 3170.46167 } },
+                  { "Index": 7, "DiffuseUv": { "x": 5376, "y": 4834.46191 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": 4864, "y": 3584 } },
+                  { "Index": 3, "DiffuseUv": { "x": 4864, "y": 5376 } },
+                  { "Index": 2, "DiffuseUv": { "x": 3328, "y": 5376 } },
+                  { "Index": 1, "DiffuseUv": { "x": 3328, "y": 3584 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 111,
+            "Name": "Solid 11",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": -383.999969, "y": 1024, "z": 25.7985229 },
+              { "x": 1.52587891e-05, "y": 1024, "z": 25.7985229 },
+              { "x": 0, "y": 1055.99988, "z": 25.7985229 },
+              { "x": -383.999939, "y": 1056, "z": 25.7985229 },
+              { "x": -383.999939, "y": 719.999939, "z": 217.798492 },
+              { "x": 0, "y": 720, "z": 217.798492 },
+              { "x": -5.7220459e-05, "y": 752.000122, "z": 217.798492 },
+              { "x": -383.999969, "y": 751.999939, "z": 217.798492 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": 8192, "y": 206.388184 } },
+                  { "Index": 2, "DiffuseUv": { "x": 8447.99902, "y": 206.388184 } },
+                  { "Index": 6, "DiffuseUv": { "x": 6016.00098, "y": 1742.38794 } },
+                  { "Index": 5, "DiffuseUv": { "x": 5760, "y": 1742.38794 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -8192.00293, "y": 206.392334 } },
+                  { "Index": 4, "DiffuseUv": { "x": -5760.00244, "y": 1742.39209 } },
+                  { "Index": 7, "DiffuseUv": { "x": -6016.00244, "y": 1742.39209 } },
+                  { "Index": 3, "DiffuseUv": { "x": -8448.00293, "y": 206.392334 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 3071.99536, "y": -7032.48242 } },
+                  { "Index": 7, "DiffuseUv": { "x": 3071.99683, "y": -4156.04004 } },
+                  { "Index": 6, "DiffuseUv": { "x": -0.00241089007, "y": -4156.03955 } },
+                  { "Index": 2, "DiffuseUv": { "x": -0.00402832124, "y": -7032.47998 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -3071.99976, "y": -6816.03564 } },
+                  { "Index": 1, "DiffuseUv": { "x": 0.000122070312, "y": -6816.03564 } },
+                  { "Index": 5, "DiffuseUv": { "x": 0, "y": -3939.59375 } },
+                  { "Index": 4, "DiffuseUv": { "x": -3071.99951, "y": -3939.59326 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -3071.99951, "y": 5759.99951 } },
+                  { "Index": 5, "DiffuseUv": { "x": 0, "y": 5760 } },
+                  { "Index": 6, "DiffuseUv": { "x": -0.000457763672, "y": 6016.00098 } },
+                  { "Index": 7, "DiffuseUv": { "x": -3071.99976, "y": 6015.99951 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": 3071.99976, "y": 8192 } },
+                  { "Index": 3, "DiffuseUv": { "x": 3071.99951, "y": 8448 } },
+                  { "Index": 2, "DiffuseUv": { "x": 0, "y": 8447.99902 } },
+                  { "Index": 1, "DiffuseUv": { "x": -0.000122070312, "y": 8192 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 112,
+            "Name": "Solid 12",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": 239.999908, "y": 967.999878, "z": 47.9999619 },
+              { "x": 239.999893, "y": 887.999817, "z": 47.999958 },
+              { "x": 239.999908, "y": 968.000061, "z": 31.9999619 },
+              { "x": 239.999893, "y": 887.999817, "z": 31.9999619 },
+              { "x": 159.999969, "y": 967.999756, "z": 47.9999657 },
+              { "x": 159.999954, "y": 888.000122, "z": 47.9999619 },
+              { "x": 159.999954, "y": 967.999817, "z": 31.9999695 },
+              { "x": 159.999939, "y": 888.000366, "z": 31.9999638 },
+              { "x": 216.000137, "y": 991.999878, "z": 47.9999657 },
+              { "x": 184.000275, "y": 991.999878, "z": 47.9999733 },
+              { "x": 216.000275, "y": 991.999756, "z": 31.9999657 },
+              { "x": 184, "y": 991.999756, "z": 31.9999657 },
+              { "x": 184.000443, "y": 863.999756, "z": 47.9999542 },
+              { "x": 215.999435, "y": 863.999695, "z": 47.999958 },
+              { "x": 184.000305, "y": 863.999695, "z": 31.9999619 },
+              { "x": 215.999313, "y": 863.999695, "z": 31.9999599 },
+              { "x": 231.999954, "y": 871.999939, "z": 47.9999542 },
+              { "x": 231.999969, "y": 983.999939, "z": 47.9999657 },
+              { "x": 168.000168, "y": 984.000061, "z": 47.9999695 },
+              { "x": 168.000565, "y": 871.999023, "z": 47.999958 },
+              { "x": 232.000137, "y": 872.000061, "z": 31.9999619 },
+              { "x": 232.000046, "y": 983.999939, "z": 31.9999657 },
+              { "x": 168.000122, "y": 984.000061, "z": 31.9999695 },
+              { "x": 168.000671, "y": 871.998901, "z": 31.9999657 },
+              { "x": 232, "y": 872.000061, "z": 42.4262505 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 7103.99902, "y": 255.999695 } },
+                  { "Index": 2, "DiffuseUv": { "x": 7744.00098, "y": 255.999695 } },
+                  { "Index": 0, "DiffuseUv": { "x": 7743.99951, "y": 383.999695 } },
+                  { "Index": 1, "DiffuseUv": { "x": 7103.99902, "y": 383.999664 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 6, "DiffuseUv": { "x": -7743.99902, "y": 256.000977 } },
+                  { "Index": 7, "DiffuseUv": { "x": -7104.00342, "y": 256.000946 } },
+                  { "Index": 5, "DiffuseUv": { "x": -7104.00146, "y": 384.000916 } },
+                  { "Index": 4, "DiffuseUv": { "x": -7743.99854, "y": 384.000946 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 10, "DiffuseUv": { "x": -1728.0022, "y": 256.060272 } },
+                  { "Index": 11, "DiffuseUv": { "x": -1472, "y": 256.060272 } },
+                  { "Index": 9, "DiffuseUv": { "x": -1472.0022, "y": 384.060333 } },
+                  { "Index": 8, "DiffuseUv": { "x": -1728.0011, "y": 384.060272 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 14, "DiffuseUv": { "x": 1472.00244, "y": 255.999695 } },
+                  { "Index": 15, "DiffuseUv": { "x": 1727.99451, "y": 255.99968 } },
+                  { "Index": 13, "DiffuseUv": { "x": 1727.99548, "y": 383.999664 } },
+                  { "Index": 12, "DiffuseUv": { "x": 1472.00354, "y": 383.999634 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 5, "DiffuseUv": { "x": 1279.99951, "y": 7104.00098 } },
+                  { "Index": 19, "DiffuseUv": { "x": 1344.00439, "y": 6975.99219 } },
+                  { "Index": 12, "DiffuseUv": { "x": 1472.00342, "y": 6911.99805 } },
+                  { "Index": 13, "DiffuseUv": { "x": 1727.99536, "y": 6911.99756 } },
+                  { "Index": 16, "DiffuseUv": { "x": 1855.99951, "y": 6975.99951 } },
+                  { "Index": 1, "DiffuseUv": { "x": 1919.99902, "y": 7103.99854 } },
+                  { "Index": 0, "DiffuseUv": { "x": 1919.99915, "y": 7743.99902 } },
+                  { "Index": 17, "DiffuseUv": { "x": 1855.99963, "y": 7871.99951 } },
+                  { "Index": 8, "DiffuseUv": { "x": 1728.00098, "y": 7935.99902 } },
+                  { "Index": 9, "DiffuseUv": { "x": 1472.00208, "y": 7935.99902 } },
+                  { "Index": 18, "DiffuseUv": { "x": 1344.00122, "y": 7872.00049 } },
+                  { "Index": 4, "DiffuseUv": { "x": 1279.99963, "y": 7743.99805 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": -1919.99915, "y": 7103.99854 } },
+                  { "Index": 20, "DiffuseUv": { "x": -1856.0011, "y": 6976.00049 } },
+                  { "Index": 15, "DiffuseUv": { "x": -1727.99451, "y": 6911.99756 } },
+                  { "Index": 14, "DiffuseUv": { "x": -1472.00244, "y": 6911.99756 } },
+                  { "Index": 23, "DiffuseUv": { "x": -1344.00537, "y": 6975.99121 } },
+                  { "Index": 7, "DiffuseUv": { "x": -1279.99951, "y": 7104.00293 } },
+                  { "Index": 6, "DiffuseUv": { "x": -1279.99963, "y": 7743.99854 } },
+                  { "Index": 22, "DiffuseUv": { "x": -1344.00098, "y": 7872.00049 } },
+                  { "Index": 11, "DiffuseUv": { "x": -1472, "y": 7935.99805 } },
+                  { "Index": 10, "DiffuseUv": { "x": -1728.0022, "y": 7935.99805 } },
+                  { "Index": 21, "DiffuseUv": { "x": -1856.00037, "y": 7871.99951 } },
+                  { "Index": 2, "DiffuseUv": { "x": -1919.99927, "y": 7744.00049 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 20, "DiffuseUv": { "x": 6393.9668, "y": 255.95665 } },
+                  { "Index": 24, "DiffuseUv": { "x": 6393.9668, "y": 339.366974 } },
+                  { "Index": 16, "DiffuseUv": { "x": 6393.96582, "y": 383.956604 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 2, "DiffuseUv": { "x": 6067.81543, "y": 255.977631 } },
+                  { "Index": 21, "DiffuseUv": { "x": 6210.92188, "y": 255.977661 } },
+                  { "Index": 17, "DiffuseUv": { "x": 6210.92236, "y": 383.977661 } },
+                  { "Index": 0, "DiffuseUv": { "x": 6067.81396, "y": 383.977631 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 21, "DiffuseUv": { "x": 1860.38098, "y": 256.023224 } },
+                  { "Index": 10, "DiffuseUv": { "x": 2003.48706, "y": 256.023224 } },
+                  { "Index": 8, "DiffuseUv": { "x": 2003.48853, "y": 384.023224 } },
+                  { "Index": 17, "DiffuseUv": { "x": 1860.38147, "y": 384.023224 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 11, "DiffuseUv": { "x": -4865.60449, "y": 255.991486 } },
+                  { "Index": 22, "DiffuseUv": { "x": -4722.49805, "y": 255.991516 } },
+                  { "Index": 18, "DiffuseUv": { "x": -4722.49805, "y": 383.991516 } },
+                  { "Index": 9, "DiffuseUv": { "x": -4865.60693, "y": 383.991547 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 22, "DiffuseUv": { "x": -7641.98145, "y": 255.99382 } },
+                  { "Index": 6, "DiffuseUv": { "x": -7498.87109, "y": 255.99382 } },
+                  { "Index": 4, "DiffuseUv": { "x": -7498.87061, "y": 383.993805 } },
+                  { "Index": 18, "DiffuseUv": { "x": -7641.98193, "y": 383.993835 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 7, "DiffuseUv": { "x": -5781.58057, "y": 255.988678 } },
+                  { "Index": 23, "DiffuseUv": { "x": -5638.45898, "y": 255.988693 } },
+                  { "Index": 19, "DiffuseUv": { "x": -5638.46045, "y": 383.988647 } },
+                  { "Index": 5, "DiffuseUv": { "x": -5781.5791, "y": 383.988678 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 23, "DiffuseUv": { "x": -1917.43457, "y": 256.049347 } },
+                  { "Index": 14, "DiffuseUv": { "x": -1774.33154, "y": 256.049316 } },
+                  { "Index": 12, "DiffuseUv": { "x": -1774.33081, "y": 384.049255 } },
+                  { "Index": 19, "DiffuseUv": { "x": -1917.43579, "y": 384.049286 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 15, "DiffuseUv": { "x": 4636.69238, "y": 256.031586 } },
+                  { "Index": 20, "DiffuseUv": { "x": 4779.80762, "y": 256.031586 } },
+                  { "Index": 24, "DiffuseUv": { "x": 4779.80664, "y": 339.441895 } },
+                  { "Index": 16, "DiffuseUv": { "x": 4779.80615, "y": 384.031525 } },
+                  { "Index": 13, "DiffuseUv": { "x": 4636.69336, "y": 384.031555 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 20, "DiffuseUv": { "x": 7069.56299, "y": 255.999725 } },
+                  { "Index": 3, "DiffuseUv": { "x": 7212.66846, "y": 255.999725 } },
+                  { "Index": 1, "DiffuseUv": { "x": 7212.66846, "y": 383.999695 } },
+                  { "Index": 16, "DiffuseUv": { "x": 7069.56104, "y": 383.999664 } },
+                  { "Index": 24, "DiffuseUv": { "x": 7069.5625, "y": 339.410034 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 113,
+            "Name": "Solid 13",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": -383.999939, "y": 719.999939, "z": 25.7984924 },
+              { "x": -368.000031, "y": 720.000061, "z": 25.7984924 },
+              { "x": -367.999908, "y": 736.000061, "z": 25.7984924 },
+              { "x": -384, "y": 736.000183, "z": 25.7984924 },
+              { "x": -383.999939, "y": 719.999939, "z": 217.798492 },
+              { "x": -368.000031, "y": 720.000061, "z": 217.798492 },
+              { "x": -367.999908, "y": 736.000061, "z": 217.798492 },
+              { "x": -384, "y": 736.000183, "z": 217.798492 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 3072, "y": 5888.00146 } },
+                  { "Index": 2, "DiffuseUv": { "x": 2943.99927, "y": 5888.00049 } },
+                  { "Index": 1, "DiffuseUv": { "x": 2944.00024, "y": 5760.00049 } },
+                  { "Index": 0, "DiffuseUv": { "x": 3071.99951, "y": 5759.99951 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -3071.99951, "y": 5759.99951 } },
+                  { "Index": 5, "DiffuseUv": { "x": -2944.00024, "y": 5760.00049 } },
+                  { "Index": 6, "DiffuseUv": { "x": -2943.99927, "y": 5888.00049 } },
+                  { "Index": 7, "DiffuseUv": { "x": -3072, "y": 5888.00146 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -3071.95557, "y": 206.387939 } },
+                  { "Index": 1, "DiffuseUv": { "x": -2943.9563, "y": 206.387939 } },
+                  { "Index": 5, "DiffuseUv": { "x": -2943.9563, "y": 1742.38794 } },
+                  { "Index": 4, "DiffuseUv": { "x": -3071.95557, "y": 1742.38794 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": 5759.97803, "y": 206.387939 } },
+                  { "Index": 2, "DiffuseUv": { "x": 5887.97803, "y": 206.387939 } },
+                  { "Index": 6, "DiffuseUv": { "x": 5887.97803, "y": 1742.38794 } },
+                  { "Index": 5, "DiffuseUv": { "x": 5759.97803, "y": 1742.38794 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 2, "DiffuseUv": { "x": 2944.04419, "y": 206.387939 } },
+                  { "Index": 3, "DiffuseUv": { "x": 3072.04492, "y": 206.387939 } },
+                  { "Index": 7, "DiffuseUv": { "x": 3072.04492, "y": 1742.38794 } },
+                  { "Index": 6, "DiffuseUv": { "x": 2944.04419, "y": 1742.38794 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": -5888.01318, "y": 206.387939 } },
+                  { "Index": 0, "DiffuseUv": { "x": -5760.01123, "y": 206.387939 } },
+                  { "Index": 4, "DiffuseUv": { "x": -5760.01123, "y": 1742.38794 } },
+                  { "Index": 7, "DiffuseUv": { "x": -5888.01318, "y": 1742.38794 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 114,
+            "Name": "Solid 14",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": -15.9999657, "y": 719.999878, "z": 25.7984924 },
+              { "x": 0, "y": 720, "z": 25.7984924 },
+              { "x": 0, "y": 735.999939, "z": 25.7984924 },
+              { "x": -15.9999657, "y": 735.999939, "z": 25.7984924 },
+              { "x": -15.9999657, "y": 719.999878, "z": 217.798492 },
+              { "x": 0, "y": 720, "z": 217.798492 },
+              { "x": 0, "y": 735.999939, "z": 217.798492 },
+              { "x": -15.9999657, "y": 735.999939, "z": 217.798492 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 127.999725, "y": 5887.99951 } },
+                  { "Index": 2, "DiffuseUv": { "x": 0, "y": 5887.99951 } },
+                  { "Index": 1, "DiffuseUv": { "x": 0, "y": 5760 } },
+                  { "Index": 0, "DiffuseUv": { "x": 127.999725, "y": 5759.99902 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -127.999725, "y": 5759.99902 } },
+                  { "Index": 5, "DiffuseUv": { "x": 0, "y": 5760 } },
+                  { "Index": 6, "DiffuseUv": { "x": 0, "y": 5887.99951 } },
+                  { "Index": 7, "DiffuseUv": { "x": -127.999725, "y": 5887.99951 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -127.95578, "y": 206.387939 } },
+                  { "Index": 1, "DiffuseUv": { "x": 0.0439454056, "y": 206.387939 } },
+                  { "Index": 5, "DiffuseUv": { "x": 0.0439454056, "y": 1742.38794 } },
+                  { "Index": 4, "DiffuseUv": { "x": -127.95578, "y": 1742.38794 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": 5760, "y": 206.387939 } },
+                  { "Index": 2, "DiffuseUv": { "x": 5887.99951, "y": 206.387939 } },
+                  { "Index": 6, "DiffuseUv": { "x": 5887.99951, "y": 1742.38794 } },
+                  { "Index": 5, "DiffuseUv": { "x": 5760, "y": 1742.38794 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 2, "DiffuseUv": { "x": 0, "y": 206.387939 } },
+                  { "Index": 3, "DiffuseUv": { "x": 127.999725, "y": 206.387939 } },
+                  { "Index": 7, "DiffuseUv": { "x": 127.999725, "y": 1742.38794 } },
+                  { "Index": 6, "DiffuseUv": { "x": 0, "y": 1742.38794 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": -5887.99951, "y": 206.387939 } },
+                  { "Index": 0, "DiffuseUv": { "x": -5759.99902, "y": 206.387939 } },
+                  { "Index": 4, "DiffuseUv": { "x": -5759.99902, "y": 1742.38794 } },
+                  { "Index": 7, "DiffuseUv": { "x": -5887.99951, "y": 1742.38794 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 115,
+            "Name": "Solid 15",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": 232.000137, "y": 872.000061, "z": 31.9999619 },
+              { "x": 239.999893, "y": 887.999817, "z": 31.9999619 },
+              { "x": 239.999893, "y": 887.999817, "z": 47.999958 },
+              { "x": 231.999954, "y": 871.999939, "z": 47.9999542 },
+              { "x": 232, "y": 872.000061, "z": 42.4262505 },
+              { "x": 259.245605, "y": 858.37738, "z": 32.0000648 },
+              { "x": 267.245361, "y": 874.377136, "z": 32.0000648 },
+              { "x": 267.245361, "y": 874.377136, "z": 48.000061 },
+              { "x": 259.245422, "y": 858.377258, "z": 48.0000572 },
+              { "x": 259.245453, "y": 858.37738, "z": 42.4263535 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -7069.55273, "y": 339.406464 } },
+                  { "Index": 3, "DiffuseUv": { "x": -7069.55176, "y": 383.996094 } },
+                  { "Index": 2, "DiffuseUv": { "x": -7212.65918, "y": 383.996124 } },
+                  { "Index": 1, "DiffuseUv": { "x": -7212.65918, "y": 255.996155 } },
+                  { "Index": 0, "DiffuseUv": { "x": -7069.55322, "y": 255.996155 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 5, "DiffuseUv": { "x": 7069.56201, "y": 256.000549 } },
+                  { "Index": 6, "DiffuseUv": { "x": 7212.66748, "y": 256.000549 } },
+                  { "Index": 7, "DiffuseUv": { "x": 7212.66748, "y": 384.000549 } },
+                  { "Index": 8, "DiffuseUv": { "x": 7069.56006, "y": 384.000519 } },
+                  { "Index": 9, "DiffuseUv": { "x": 7069.56152, "y": 339.410858 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -1856.00183, "y": 6976 } },
+                  { "Index": 1, "DiffuseUv": { "x": -1919.99988, "y": 7103.99805 } },
+                  { "Index": 6, "DiffuseUv": { "x": -2137.96362, "y": 6995.0166 } },
+                  { "Index": 5, "DiffuseUv": { "x": -2073.96558, "y": 6867.01855 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": 1459.69397, "y": 255.999725 } },
+                  { "Index": 2, "DiffuseUv": { "x": 1459.69397, "y": 383.999695 } },
+                  { "Index": 7, "DiffuseUv": { "x": 1216.0033, "y": 384.000549 } },
+                  { "Index": 6, "DiffuseUv": { "x": 1216.0033, "y": 256.000549 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 2, "DiffuseUv": { "x": 1920.00037, "y": 7103.99805 } },
+                  { "Index": 3, "DiffuseUv": { "x": 1856.00085, "y": 6975.99902 } },
+                  { "Index": 8, "DiffuseUv": { "x": 2073.9646, "y": 6867.01758 } },
+                  { "Index": 7, "DiffuseUv": { "x": 2137.96411, "y": 6995.0166 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": -1459.6958, "y": 383.835205 } },
+                  { "Index": 4, "DiffuseUv": { "x": -1459.69592, "y": 339.245575 } },
+                  { "Index": 9, "DiffuseUv": { "x": -1216.00549, "y": 339.246399 } },
+                  { "Index": 8, "DiffuseUv": { "x": -1216.00513, "y": 383.83606 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -1459.69421, "y": 339.368378 } },
+                  { "Index": 0, "DiffuseUv": { "x": -1459.69312, "y": 255.958084 } },
+                  { "Index": 5, "DiffuseUv": { "x": -1216.00256, "y": 255.958908 } },
+                  { "Index": 9, "DiffuseUv": { "x": -1216.00366, "y": 339.369202 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 116,
+            "Name": "Solid 16",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": 159.999939, "y": 888.000366, "z": 31.9999638 },
+              { "x": 168.000671, "y": 871.998901, "z": 31.9999657 },
+              { "x": 168.000565, "y": 871.999023, "z": 47.999958 },
+              { "x": 159.999954, "y": 888.000122, "z": 47.9999619 },
+              { "x": 134.745392, "y": 875.373108, "z": 31.999855 },
+              { "x": 142.746124, "y": 859.371643, "z": 31.9998569 },
+              { "x": 142.746017, "y": 859.371765, "z": 47.9998512 },
+              { "x": 134.745407, "y": 875.372864, "z": 47.999855 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 5781.56543, "y": 383.988678 } },
+                  { "Index": 2, "DiffuseUv": { "x": 5638.44629, "y": 383.988647 } },
+                  { "Index": 1, "DiffuseUv": { "x": 5638.44531, "y": 255.988693 } },
+                  { "Index": 0, "DiffuseUv": { "x": 5781.56689, "y": 255.988678 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -5781.58057, "y": 255.988388 } },
+                  { "Index": 5, "DiffuseUv": { "x": -5638.45898, "y": 255.988403 } },
+                  { "Index": 6, "DiffuseUv": { "x": -5638.45996, "y": 383.988373 } },
+                  { "Index": 7, "DiffuseUv": { "x": -5781.57861, "y": 383.988403 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -1280.00037, "y": 7104.00342 } },
+                  { "Index": 1, "DiffuseUv": { "x": -1344.00623, "y": 6975.9917 } },
+                  { "Index": 5, "DiffuseUv": { "x": -1141.96985, "y": 6874.97363 } },
+                  { "Index": 4, "DiffuseUv": { "x": -1077.96399, "y": 7002.98535 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": 4321.87012, "y": 256.055023 } },
+                  { "Index": 2, "DiffuseUv": { "x": 4321.87012, "y": 384.054962 } },
+                  { "Index": 6, "DiffuseUv": { "x": 4095.98682, "y": 384.054108 } },
+                  { "Index": 5, "DiffuseUv": { "x": 4095.98706, "y": 256.054169 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 2, "DiffuseUv": { "x": 1344.00574, "y": 6975.99268 } },
+                  { "Index": 3, "DiffuseUv": { "x": 1280.00085, "y": 7104.00146 } },
+                  { "Index": 7, "DiffuseUv": { "x": 1077.96448, "y": 7002.9834 } },
+                  { "Index": 6, "DiffuseUv": { "x": 1141.96936, "y": 6874.97461 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": -4321.86963, "y": 383.918335 } },
+                  { "Index": 0, "DiffuseUv": { "x": -4321.87012, "y": 255.918335 } },
+                  { "Index": 4, "DiffuseUv": { "x": -4095.98682, "y": 255.917465 } },
+                  { "Index": 7, "DiffuseUv": { "x": -4095.98608, "y": 383.91748 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 117,
+            "Name": "Solid 17",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": 168.000122, "y": 984.000061, "z": 31.9999695 },
+              { "x": 159.999954, "y": 967.999817, "z": 31.9999695 },
+              { "x": 159.999969, "y": 967.999756, "z": 47.9999657 },
+              { "x": 168.000168, "y": 984.000061, "z": 47.9999695 },
+              { "x": 140.985397, "y": 997.507385, "z": 32.0000496 },
+              { "x": 132.985229, "y": 981.507141, "z": 32.0000496 },
+              { "x": 132.985245, "y": 981.50708, "z": 48.0000458 },
+              { "x": 140.985443, "y": 997.507385, "z": 48.0000496 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 7641.98242, "y": 383.993866 } },
+                  { "Index": 2, "DiffuseUv": { "x": 7498.87109, "y": 383.993835 } },
+                  { "Index": 1, "DiffuseUv": { "x": 7498.87158, "y": 255.993851 } },
+                  { "Index": 0, "DiffuseUv": { "x": 7641.98193, "y": 255.993851 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -7641.98096, "y": 255.993851 } },
+                  { "Index": 5, "DiffuseUv": { "x": -7498.87012, "y": 255.993851 } },
+                  { "Index": 6, "DiffuseUv": { "x": -7498.86963, "y": 383.993805 } },
+                  { "Index": 7, "DiffuseUv": { "x": -7641.98096, "y": 383.993835 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -1344.00037, "y": 7872.00098 } },
+                  { "Index": 1, "DiffuseUv": { "x": -1279.99902, "y": 7743.99902 } },
+                  { "Index": 5, "DiffuseUv": { "x": -1063.88123, "y": 7852.05762 } },
+                  { "Index": 4, "DiffuseUv": { "x": -1127.88257, "y": 7980.05957 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": -2318.34692, "y": 255.977402 } },
+                  { "Index": 2, "DiffuseUv": { "x": -2318.34668, "y": 383.977356 } },
+                  { "Index": 6, "DiffuseUv": { "x": -2559.97363, "y": 383.978027 } },
+                  { "Index": 5, "DiffuseUv": { "x": -2559.97363, "y": 255.978043 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 2, "DiffuseUv": { "x": 1279.9989, "y": 7743.99854 } },
+                  { "Index": 3, "DiffuseUv": { "x": 1344.00049, "y": 7872.00098 } },
+                  { "Index": 7, "DiffuseUv": { "x": 1127.88269, "y": 7980.05957 } },
+                  { "Index": 6, "DiffuseUv": { "x": 1063.8811, "y": 7852.05713 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 2318.3457, "y": 384.009552 } },
+                  { "Index": 0, "DiffuseUv": { "x": 2318.34619, "y": 256.009552 } },
+                  { "Index": 4, "DiffuseUv": { "x": 2559.97314, "y": 256.010193 } },
+                  { "Index": 7, "DiffuseUv": { "x": 2559.9729, "y": 384.010223 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 118,
+            "Name": "Solid 18",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": 239.999908, "y": 968.000061, "z": 31.9999619 },
+              { "x": 232.000046, "y": 983.999939, "z": 31.9999657 },
+              { "x": 231.999969, "y": 983.999939, "z": 47.9999657 },
+              { "x": 239.999908, "y": 967.999878, "z": 47.9999619 },
+              { "x": 269.012817, "y": 982.50647, "z": 32.0001793 },
+              { "x": 261.01297, "y": 998.506348, "z": 32.0001831 },
+              { "x": 261.012878, "y": 998.506348, "z": 48.0001831 },
+              { "x": 269.012817, "y": 982.506287, "z": 48.0001793 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": -6067.81738, "y": 383.977631 } },
+                  { "Index": 2, "DiffuseUv": { "x": -6210.92578, "y": 383.977661 } },
+                  { "Index": 1, "DiffuseUv": { "x": -6210.92578, "y": 255.977661 } },
+                  { "Index": 0, "DiffuseUv": { "x": -6067.81836, "y": 255.977631 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": 6067.81934, "y": 255.973587 } },
+                  { "Index": 5, "DiffuseUv": { "x": 6210.92676, "y": 255.973618 } },
+                  { "Index": 6, "DiffuseUv": { "x": 6210.92725, "y": 383.973633 } },
+                  { "Index": 7, "DiffuseUv": { "x": 6067.81787, "y": 383.973602 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -1920.00073, "y": 7744.00146 } },
+                  { "Index": 1, "DiffuseUv": { "x": -1856.00183, "y": 7872.00049 } },
+                  { "Index": 5, "DiffuseUv": { "x": -2088.10522, "y": 7988.05176 } },
+                  { "Index": 4, "DiffuseUv": { "x": -2152.104, "y": 7860.05273 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": -5180.51465, "y": 256.01297 } },
+                  { "Index": 2, "DiffuseUv": { "x": -5180.51416, "y": 384.01297 } },
+                  { "Index": 6, "DiffuseUv": { "x": -5440.01318, "y": 384.014709 } },
+                  { "Index": 5, "DiffuseUv": { "x": -5440.01367, "y": 256.014709 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 2, "DiffuseUv": { "x": 1856.00208, "y": 7872.00098 } },
+                  { "Index": 3, "DiffuseUv": { "x": 1920.00159, "y": 7744.00049 } },
+                  { "Index": 7, "DiffuseUv": { "x": 2152.10474, "y": 7860.05176 } },
+                  { "Index": 6, "DiffuseUv": { "x": 2088.10522, "y": 7988.05225 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/painted_metal_1", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 5180.51367, "y": 383.937592 } },
+                  { "Index": 0, "DiffuseUv": { "x": 5180.51416, "y": 255.937592 } },
+                  { "Index": 4, "DiffuseUv": { "x": 5440.01318, "y": 255.939331 } },
+                  { "Index": 7, "DiffuseUv": { "x": 5440.0127, "y": 383.939331 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 119,
+            "Name": "Solid 19",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": -448, "y": -192, "z": 32 },
+              { "x": -384, "y": -192, "z": 32 },
+              { "x": -384, "y": -128, "z": 32 },
+              { "x": -448, "y": -128, "z": 32 },
+              { "x": -448, "y": -192, "z": 96 },
+              { "x": -384, "y": -192, "z": 96 },
+              { "x": -384, "y": -128, "z": 96 },
+              { "x": -448, "y": -128, "z": 96 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": -1536, "y": 256 } },
+                  { "Index": 2, "DiffuseUv": { "x": -1024, "y": 256 } },
+                  { "Index": 6, "DiffuseUv": { "x": -1024, "y": 768 } },
+                  { "Index": 5, "DiffuseUv": { "x": -1536, "y": 768 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": 1536, "y": 256 } },
+                  { "Index": 4, "DiffuseUv": { "x": 1536, "y": 768 } },
+                  { "Index": 7, "DiffuseUv": { "x": 1024, "y": 768 } },
+                  { "Index": 3, "DiffuseUv": { "x": 1024, "y": 256 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 3584, "y": 256 } },
+                  { "Index": 7, "DiffuseUv": { "x": 3584, "y": 768 } },
+                  { "Index": 6, "DiffuseUv": { "x": 3072, "y": 768 } },
+                  { "Index": 2, "DiffuseUv": { "x": 3072, "y": 256 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -3584, "y": 256 } },
+                  { "Index": 1, "DiffuseUv": { "x": -3072, "y": 256 } },
+                  { "Index": 5, "DiffuseUv": { "x": -3072, "y": 768 } },
+                  { "Index": 4, "DiffuseUv": { "x": -3584, "y": 768 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_orange", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -3584, "y": -1536 } },
+                  { "Index": 5, "DiffuseUv": { "x": -3072, "y": -1536 } },
+                  { "Index": 6, "DiffuseUv": { "x": -3072, "y": -1024 } },
+                  { "Index": 7, "DiffuseUv": { "x": -3584, "y": -1024 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": 3584, "y": -1536 } },
+                  { "Index": 3, "DiffuseUv": { "x": 3584, "y": -1024 } },
+                  { "Index": 2, "DiffuseUv": { "x": 3072, "y": -1024 } },
+                  { "Index": 1, "DiffuseUv": { "x": 3072, "y": -1536 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Solid",
+            "UniqueId": 120,
+            "Name": "Solid 20",
+            "Children": [],
+            "Color": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+            "Hidden": false,
+            "Detail": false,
+            "VertexPositions": [
+              { "x": -576, "y": -192, "z": 31.9999847 },
+              { "x": -512, "y": -192, "z": 31.9999847 },
+              { "x": -512, "y": -128, "z": 31.9999847 },
+              { "x": -576, "y": -128, "z": 31.9999847 },
+              { "x": -576, "y": -192, "z": 224.000015 },
+              { "x": -512, "y": -192, "z": 224.000015 },
+              { "x": -512, "y": -128, "z": 224.000015 },
+              { "x": -576, "y": -128, "z": 224.000015 }
+            ],
+            "Faces": [
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 1, "DiffuseUv": { "x": -1536, "y": 255.999878 } },
+                  { "Index": 2, "DiffuseUv": { "x": -1024, "y": 255.999878 } },
+                  { "Index": 6, "DiffuseUv": { "x": -1024, "y": 1792.00012 } },
+                  { "Index": 5, "DiffuseUv": { "x": -1536, "y": 1792.00012 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": 1536, "y": 255.999878 } },
+                  { "Index": 4, "DiffuseUv": { "x": 1536, "y": 1792.00012 } },
+                  { "Index": 7, "DiffuseUv": { "x": 1024, "y": 1792.00012 } },
+                  { "Index": 3, "DiffuseUv": { "x": 1024, "y": 255.999878 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 3, "DiffuseUv": { "x": 4608, "y": 255.999878 } },
+                  { "Index": 7, "DiffuseUv": { "x": 4608, "y": 1792.00012 } },
+                  { "Index": 6, "DiffuseUv": { "x": 4096, "y": 1792.00012 } },
+                  { "Index": 2, "DiffuseUv": { "x": 4096, "y": 255.999878 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": -4608, "y": 255.999878 } },
+                  { "Index": 1, "DiffuseUv": { "x": -4096, "y": 255.999878 } },
+                  { "Index": 5, "DiffuseUv": { "x": -4096, "y": 1792.00012 } },
+                  { "Index": 4, "DiffuseUv": { "x": -4608, "y": 1792.00012 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_orange", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 4, "DiffuseUv": { "x": -4608, "y": -1536 } },
+                  { "Index": 5, "DiffuseUv": { "x": -4096, "y": -1536 } },
+                  { "Index": 6, "DiffuseUv": { "x": -4096, "y": -1024 } },
+                  { "Index": 7, "DiffuseUv": { "x": -4608, "y": -1024 } }
+                ]
+              },
+              {
+                "Texture": { "Identifier": "materials/dev_gray", "Width": 0, "Height": 0 },
+                "TextureMapping": { "UScale": 0.125, "VScale": 0.125, "UShift": 0, "VShift": 0, "Rotation": 0, "TextureLocked": false },
+                "Indices": [
+                  { "Index": 0, "DiffuseUv": { "x": 4608, "y": -1536 } },
+                  { "Index": 3, "DiffuseUv": { "x": 4608, "y": -1024 } },
+                  { "Index": 2, "DiffuseUv": { "x": 4096, "y": -1024 } },
+                  { "Index": 1, "DiffuseUv": { "x": 4096, "y": -1536 } }
+                ]
+              }
+            ],
+            "Entity": null
+          },
+          {
+            "$type": "Entity",
+            "UniqueId": 10000,
+            "Name": "Point - Spawn Point",
+            "Children": [],
+            "ClassName": "info_player_spawn",
+            "Bounds": { "center": { "x": -288, "y": 64, "z": 64 }, "extents": { "x": 8, "y": 8, "z": 8 } },
+            "KeyValuePairs": {
+              "Team": "0",
+              "Direction": "(0.00, 0.00, 0.00)",
+              "TargetName": "",
+              "Enabled": "True"
+            }
+          },
+          {
+            "$type": "Entity",
+            "UniqueId": 10001,
+            "Name": "Light - Sun",
+            "Children": [],
+            "ClassName": "env_sun",
+            "Bounds": { "center": { "x": -288, "y": -32, "z": 32 }, "extents": { "x": 8, "y": 8, "z": 8 } },
+            "KeyValuePairs": {
+              "Angles": "(45.00, -15.00, 0.00)",
+              "SunColor": "RGBA(255, 255, 255, 255)",
+              "AmbientColor": "RGBA(155, 155, 155, 255)",
+              "Intensity": "1",
+              "Skybox": "skybox/default",
+              "TargetName": ""
+            }
+          },
+          {
+            "$type": "Entity",
+            "UniqueId": 10004,
+            "Name": "Light - Point",
+            "Children": [],
+            "ClassName": "light_point",
+            "Bounds": { "center": { "x": -192, "y": 800, "z": 96 }, "extents": { "x": 8, "y": 8, "z": 8 } },
+            "KeyValuePairs": {
+              "Radius": "600",
+              "Intensity": "1.25",
+              "Color": "RGBA(215, 255, 225, 255)",
+              "TargetName": ""
+            }
+          },
+          {
+            "$type": "Entity",
+            "UniqueId": 10005,
+            "Name": "UI - World Space",
+            "Children": [],
+            "ClassName": "wr_ui_view",
+            "Bounds": { "center": { "x": -64, "y": -160, "z": 82.7773056 }, "extents": { "x": 8, "y": 8, "z": 8 } },
+            "KeyValuePairs": {
+              "Enabled": "True",
+              "X": "150",
+              "Y": "64",
+              "Markup": "<div style=\"box-sizing:border-box;width:100%;height:100%;padding:2px;background:rgba(0,0,0,125);color:white;font-size:20px;border-radius:10px;border:1px white;\">World-space UI example</div>"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "PackageRoots": []
+}
