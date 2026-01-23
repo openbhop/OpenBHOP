@@ -106,13 +106,13 @@ static bool bh_dbg_reserve_vertices(BH_DbgVertex **ptr, uint32_t *cap, uint32_t 
     return true;
 }
 
-static bool bh_dbg_pending_push_tbuf(BH_DebugDraw *dd, SDL_GPUTransferBuffer *tbuf)
+static bool bh_dbg_pending_push_tbuf(BH_DebugDraw *dd, BH_GPUTransferBuffer *tbuf)
 {
     if (dd->pending_tbuf_count >= dd->pending_tbuf_cap)
     {
         uint32_t new_cap = dd->pending_tbuf_cap ? dd->pending_tbuf_cap * 2 : 16;
-        SDL_GPUTransferBuffer **new_mem =
-            (SDL_GPUTransferBuffer **)SDL_realloc(dd->pending_tbufs, (size_t)new_cap * sizeof(SDL_GPUTransferBuffer *));
+        BH_GPUTransferBuffer **new_mem =
+            (BH_GPUTransferBuffer **)SDL_realloc(dd->pending_tbufs, (size_t)new_cap * sizeof(BH_GPUTransferBuffer *));
         if (!new_mem)
         {
             return false;
@@ -125,17 +125,77 @@ static bool bh_dbg_pending_push_tbuf(BH_DebugDraw *dd, SDL_GPUTransferBuffer *tb
     return true;
 }
 
-static SDL_GPUColorTargetBlendState bh_dbg_alpha_blend_state(void)
+/* Keep a tiny backend-agnostic blend description here.
+   Shader program/pipeline creation is still SDL_gpu-backed for now, so we convert at the call site. */
+typedef enum BH_DbgBlendFactor
 {
-    return (SDL_GPUColorTargetBlendState){
+    BH_DBG_BLENDFACTOR_ONE = 0,
+    BH_DBG_BLENDFACTOR_SRC_ALPHA = 1,
+    BH_DBG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA = 2,
+} BH_DbgBlendFactor;
+
+typedef enum BH_DbgBlendOp
+{
+    BH_DBG_BLENDOP_ADD = 0,
+} BH_DbgBlendOp;
+
+typedef struct BH_DbgBlendState
+{
+    bool enable_blend;
+    BH_DbgBlendOp color_blend_op;
+    BH_DbgBlendOp alpha_blend_op;
+    BH_DbgBlendFactor src_color;
+    BH_DbgBlendFactor dst_color;
+    BH_DbgBlendFactor src_alpha;
+    BH_DbgBlendFactor dst_alpha;
+    bool enable_color_write_mask;
+} BH_DbgBlendState;
+
+static BH_DbgBlendState bh_dbg_alpha_blend_state(void)
+{
+    return (BH_DbgBlendState){
         .enable_blend = true,
-        .color_blend_op = SDL_GPU_BLENDOP_ADD,
-        .alpha_blend_op = SDL_GPU_BLENDOP_ADD,
-        .src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
-        .dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-        .src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
-        .dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+        .color_blend_op = BH_DBG_BLENDOP_ADD,
+        .alpha_blend_op = BH_DBG_BLENDOP_ADD,
+        .src_color = BH_DBG_BLENDFACTOR_SRC_ALPHA,
+        .dst_color = BH_DBG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+        .src_alpha = BH_DBG_BLENDFACTOR_ONE,
+        .dst_alpha = BH_DBG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
         .enable_color_write_mask = false,
+    };
+}
+
+static BH_GPUBlendFactor bh_dbg_to_gpu_blend_factor(BH_DbgBlendFactor f)
+{
+    switch (f)
+    {
+    case BH_DBG_BLENDFACTOR_SRC_ALPHA:
+        return BH_GPU_BLENDFACTOR_SRC_ALPHA;
+    case BH_DBG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA:
+        return BH_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+    case BH_DBG_BLENDFACTOR_ONE:
+    default:
+        return BH_GPU_BLENDFACTOR_ONE;
+    }
+}
+
+static BH_GPUBlendOp bh_dbg_to_gpu_blend_op(BH_DbgBlendOp op)
+{
+    (void)op;
+    return BH_GPU_BLENDOP_ADD;
+}
+
+static BH_GPUColorTargetBlendState bh_dbg_to_gpu_blend_state(BH_DbgBlendState st)
+{
+    return (BH_GPUColorTargetBlendState){
+        .enable_blend = st.enable_blend,
+        .color_blend_op = bh_dbg_to_gpu_blend_op(st.color_blend_op),
+        .alpha_blend_op = bh_dbg_to_gpu_blend_op(st.alpha_blend_op),
+        .src_color_blendfactor = bh_dbg_to_gpu_blend_factor(st.src_color),
+        .dst_color_blendfactor = bh_dbg_to_gpu_blend_factor(st.dst_color),
+        .src_alpha_blendfactor = bh_dbg_to_gpu_blend_factor(st.src_alpha),
+        .dst_alpha_blendfactor = bh_dbg_to_gpu_blend_factor(st.dst_alpha),
+        .enable_color_write_mask = st.enable_color_write_mask,
     };
 }
 
@@ -264,7 +324,7 @@ static void bh_dbg_rebuild_vertices(BH_DebugDraw *dd)
     }
 }
 
-static SDL_GPUBuffer *bh_dbg_ensure_vb(BH_DebugDraw *dd, SDL_GPUBuffer *vb, uint32_t *vb_bytes, uint32_t needed_bytes)
+static BH_GPUBuffer *bh_dbg_ensure_vb(BH_DebugDraw *dd, BH_GPUBuffer *vb, uint32_t *vb_bytes, uint32_t needed_bytes)
 {
     if (needed_bytes == 0)
     {
@@ -278,7 +338,7 @@ static SDL_GPUBuffer *bh_dbg_ensure_vb(BH_DebugDraw *dd, SDL_GPUBuffer *vb, uint
 
     if (vb)
     {
-        SDL_ReleaseGPUBuffer(dd->device, vb);
+        BH_GPU_ReleaseBuffer(dd->device, vb);
         vb = NULL;
     }
 
@@ -288,14 +348,14 @@ static SDL_GPUBuffer *bh_dbg_ensure_vb(BH_DebugDraw *dd, SDL_GPUBuffer *vb, uint
         alloc_bytes *= 2;
     }
 
-    SDL_GPUBufferCreateInfo bci = {0};
-    bci.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
+    BH_GPUBufferCreateInfo bci = {0};
+    bci.usage = BH_GPU_BUFFERUSAGE_VERTEX;
     bci.size = alloc_bytes;
 
-    vb = SDL_CreateGPUBuffer(dd->device, &bci);
+    vb = BH_GPU_CreateBuffer(dd->device, &bci);
     if (!vb)
     {
-        SDL_Log("[bh][dbg] SDL_CreateGPUBuffer failed: %s", SDL_GetError());
+        SDL_Log("[bh][dbg] BH_GPU_CreateBuffer failed: %s", BH_GPU_GetLastError());
         *vb_bytes = 0;
         return NULL;
     }
@@ -304,7 +364,7 @@ static SDL_GPUBuffer *bh_dbg_ensure_vb(BH_DebugDraw *dd, SDL_GPUBuffer *vb, uint
     return vb;
 }
 
-static bool bh_dbg_upload_vertices(BH_DebugDraw *dd, SDL_GPUCopyPass *copy_pass, SDL_GPUBuffer *dst_buffer,
+static bool bh_dbg_upload_vertices(BH_DebugDraw *dd, BH_GPUCopyPass *copy_pass, BH_GPUBuffer *dst_buffer,
                                    const BH_DbgVertex *src, uint32_t vertex_count)
 {
     if (!dst_buffer || !src || vertex_count == 0)
@@ -314,36 +374,41 @@ static bool bh_dbg_upload_vertices(BH_DebugDraw *dd, SDL_GPUCopyPass *copy_pass,
 
     const uint32_t size = vertex_count * (uint32_t)sizeof(BH_DbgVertex);
 
-    SDL_GPUTransferBufferCreateInfo tci = {0};
-    tci.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+    BH_GPUTransferBufferCreateInfo tci = {0};
+    tci.usage = BH_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
     tci.size = size;
 
-    SDL_GPUTransferBuffer *tbuf = SDL_CreateGPUTransferBuffer(dd->device, &tci);
+    BH_GPUTransferBuffer *tbuf = BH_GPU_CreateTransferBuffer(dd->device, &tci);
     if (!tbuf)
     {
-        SDL_Log("[bh][dbg] SDL_CreateGPUTransferBuffer failed: %s", SDL_GetError());
+        SDL_Log("[bh][dbg] BH_GPU_CreateTransferBuffer failed: %s", BH_GPU_GetLastError());
         return false;
     }
 
-    void *mapped = SDL_MapGPUTransferBuffer(dd->device, tbuf, false);
+    void *mapped = BH_GPU_MapTransferBuffer(dd->device, tbuf, false);
     if (!mapped)
     {
-        SDL_Log("[bh][dbg] SDL_MapGPUTransferBuffer failed: %s", SDL_GetError());
-        SDL_ReleaseGPUTransferBuffer(dd->device, tbuf);
+        SDL_Log("[bh][dbg] BH_GPU_MapTransferBuffer failed: %s", BH_GPU_GetLastError());
+        BH_GPU_ReleaseTransferBuffer(dd->device, tbuf);
         return false;
     }
 
     memcpy(mapped, src, size);
-    SDL_UnmapGPUTransferBuffer(dd->device, tbuf);
+    BH_GPU_UnmapTransferBuffer(dd->device, tbuf);
 
-    SDL_UploadToGPUBuffer(copy_pass, &(SDL_GPUTransferBufferLocation){.transfer_buffer = tbuf},
-                          &(SDL_GPUBufferRegion){.buffer = dst_buffer, .size = size}, false);
+    BH_GPUTransferBufferLocation src_loc = {.transfer_buffer = tbuf, .offset = 0};
+    BH_GPUBufferRegion dst = {.buffer = dst_buffer, .offset = 0, .size = size};
+    BH_GPU_UploadToBuffer(copy_pass, &src_loc, &dst, false);
 
-    (void)bh_dbg_pending_push_tbuf(dd, tbuf);
+    if (!bh_dbg_pending_push_tbuf(dd, tbuf))
+    {
+        BH_GPU_ReleaseTransferBuffer(dd->device, tbuf);
+        return false;
+    }
     return true;
 }
 
-static void bh_dbg_prepare_cb(void *user, SDL_GPUCommandBuffer *cmd, SDL_GPUCopyPass *copy_pass, const mat4 *view_proj,
+static void bh_dbg_prepare_cb(void *user, BH_GPUCommandBuffer *cmd, BH_GPUCopyPass *copy_pass, const mat4 *view_proj,
                               uint32_t fb_width, uint32_t fb_height, float alpha)
 {
     (void)cmd;
@@ -378,16 +443,17 @@ static void bh_dbg_prepare_cb(void *user, SDL_GPUCommandBuffer *cmd, SDL_GPUCopy
     dd->dirty = false;
 }
 
-static void bh_dbg_draw_one(BH_DebugDraw *dd, BH_ShaderProgram *prog, SDL_GPUCommandBuffer *cmd,
-                            SDL_GPURenderPass *pass, SDL_GPUBuffer *vb, uint32_t vert_count, const mat4 *view_proj)
+static void bh_dbg_draw_one(BH_DebugDraw *dd, BH_ShaderProgram *prog, BH_GPUCommandBuffer *cmd,
+                            BH_GPURenderPass *pass, BH_GPUBuffer *vb, uint32_t vert_count, const mat4 *view_proj)
 {
     if (vert_count == 0)
     {
         return;
     }
 
-    SDL_BindGPUGraphicsPipeline(pass, prog->pipeline);
-    SDL_BindGPUVertexBuffers(pass, 0, &(SDL_GPUBufferBinding){.buffer = vb}, 1);
+    BH_GPU_BindGraphicsPipeline(pass, prog->pipeline);
+    const BH_GPUBufferBinding binding = {.buffer = vb, .offset = 0};
+    BH_GPU_BindVertexBuffers(pass, 0, &binding, 1);
 
     const BH_UniformBufferReflection *per_draw_ub =
         (prog->vs_refl.uniform_buffer_count > 0) ? &prog->vs_refl.uniform_buffers[0] : NULL;
@@ -410,10 +476,10 @@ static void bh_dbg_draw_one(BH_DebugDraw *dd, BH_ShaderProgram *prog, SDL_GPUCom
     }
 
     BH_ParamBlock_PushUniforms(&per_draw, cmd);
-    SDL_DrawGPUPrimitives(pass, vert_count, 1, 0, 0);
+    BH_GPU_DrawPrimitives(pass, vert_count, 1, 0, 0);
 }
 
-static void bh_dbg_draw_cb(void *user, SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *render_pass, const mat4 *view_proj,
+static void bh_dbg_draw_cb(void *user, BH_GPUCommandBuffer *cmd, BH_GPURenderPass *render_pass, const mat4 *view_proj,
                            uint32_t fb_width, uint32_t fb_height, float alpha)
 {
     (void)fb_width;
@@ -461,7 +527,7 @@ static void bh_dbg_end_frame_cb(void *user, bool submit_ok)
     {
         if (dd->pending_tbufs[i])
         {
-            SDL_ReleaseGPUTransferBuffer(dd->device, dd->pending_tbufs[i]);
+            BH_GPU_ReleaseTransferBuffer(dd->device, dd->pending_tbufs[i]);
         }
     }
     dd->pending_tbuf_count = 0;
@@ -485,53 +551,58 @@ bool BH_DebugDraw_Init(BH_DebugDraw *dd, BH_Renderer *renderer, const char *asse
     dd->state_stack[0].depth = BH_DBG_DEPTH_TEST;
     dd->state_stack[0].default_color = BH_COLOR_WHITE;
 
-    SDL_GPUVertexAttribute attrs[2] = {
+    BH_GPUVertexAttribute attrs[2] = {
         {.location = 0,
          .buffer_slot = 0,
-         .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+         .format = BH_GPU_VERTEXELEMENTFORMAT_FLOAT3,
          .offset = (uint32_t)offsetof(BH_DbgVertex, position)},
         {.location = 1,
          .buffer_slot = 0,
-         .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
+         .format = BH_GPU_VERTEXELEMENTFORMAT_FLOAT4,
          .offset = (uint32_t)offsetof(BH_DbgVertex, color)},
     };
 
-    SDL_GPUVertexBufferDescription vb_desc = {
+    BH_GPUVertexBufferDescription vb_desc = {
         .slot = 0,
         .pitch = (uint32_t)sizeof(BH_DbgVertex),
-        .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
+        .input_rate = BH_GPU_VERTEXINPUTRATE_VERTEX,
         .instance_step_rate = 0,
     };
 
-    SDL_GPUVertexInputState vi = {
+    BH_GPUVertexInputState vi = {
         .vertex_buffer_descriptions = &vb_desc,
         .num_vertex_buffers = 1,
         .vertex_attributes = attrs,
         .num_vertex_attributes = 2,
     };
 
+    const bool use_gl = (SDL_strcasecmp(BH_GPU_GetBackend()->name, "OpenGL") == 0);
+
     char vs_spv[1024], vs_json[1024], fs_spv[1024], fs_json[1024];
-    SDL_snprintf(vs_spv, sizeof(vs_spv), "%s/shaders/compiled/debug_prim.vert.spv", asset_root);
+    SDL_snprintf(vs_spv, sizeof(vs_spv), "%s/shaders/%s/debug_prim.vert.%s", asset_root, use_gl ? "gl" : "compiled",
+                 use_gl ? "glsl" : "spv");
     SDL_snprintf(vs_json, sizeof(vs_json), "%s/shaders/compiled/debug_prim.vert.json", asset_root);
-    SDL_snprintf(fs_spv, sizeof(fs_spv), "%s/shaders/compiled/debug_prim.frag.spv", asset_root);
+    SDL_snprintf(fs_spv, sizeof(fs_spv), "%s/shaders/%s/debug_prim.frag.%s", asset_root, use_gl ? "gl" : "compiled",
+                 use_gl ? "glsl" : "spv");
     SDL_snprintf(fs_json, sizeof(fs_json), "%s/shaders/compiled/debug_prim.frag.json", asset_root);
 
     BH_ShaderProgramPipelineConfig pcfg = {
         .vertex_input = vi,
-        .rasterizer_state = {.fill_mode = SDL_GPU_FILLMODE_FILL,
-                             .cull_mode = SDL_GPU_CULLMODE_NONE,
-                             .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE},
-        .multisample_state.sample_count = SDL_GPU_SAMPLECOUNT_1,
-        .depth_stencil_state = {.enable_depth_write = false, .compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL},
-        .blend_state = bh_dbg_alpha_blend_state(),
+        .rasterizer_state = {.fill_mode = BH_GPU_FILLMODE_FILL,
+                             .cull_mode = BH_GPU_CULLMODE_NONE,
+                             .front_face = BH_GPU_FRONTFACE_COUNTER_CLOCKWISE},
+        .multisample_state.sample_count = BH_GPU_SAMPLECOUNT_1,
+        .depth_stencil_state = {.enable_depth_write = false, .compare_op = BH_GPU_COMPAREOP_LESS_OR_EQUAL},
+        .blend_state = bh_dbg_to_gpu_blend_state(bh_dbg_alpha_blend_state()),
         .has_depth_stencil_target = true,
     };
 
     /* Depth-tested lines */
-    pcfg.primitive_type = SDL_GPU_PRIMITIVETYPE_LINELIST;
+    pcfg.primitive_type = BH_GPU_PRIMITIVETYPE_LINELIST;
     pcfg.depth_stencil_state.enable_depth_test = true;
     if (!BH_ShaderProgram_LoadEx(&dd->line_depth, renderer->device, vs_spv, vs_json, fs_spv, fs_json,
-                                 renderer->swapchain_format, renderer->depth_format, &pcfg, permanent_arena))
+                                 renderer->swapchain_format,
+                                 renderer->depth_format, &pcfg, permanent_arena))
     {
         SDL_Log("[bh][dbg] Failed to load debug line_depth program");
         BH_DebugDraw_Shutdown(dd);
@@ -539,10 +610,11 @@ bool BH_DebugDraw_Init(BH_DebugDraw *dd, BH_Renderer *renderer, const char *asse
     }
 
     /* Always-draw lines */
-    pcfg.primitive_type = SDL_GPU_PRIMITIVETYPE_LINELIST;
+    pcfg.primitive_type = BH_GPU_PRIMITIVETYPE_LINELIST;
     pcfg.depth_stencil_state.enable_depth_test = false;
     if (!BH_ShaderProgram_LoadEx(&dd->line_always, renderer->device, vs_spv, vs_json, fs_spv, fs_json,
-                                 renderer->swapchain_format, renderer->depth_format, &pcfg, permanent_arena))
+                                 renderer->swapchain_format,
+                                 renderer->depth_format, &pcfg, permanent_arena))
     {
         SDL_Log("[bh][dbg] Failed to load debug line_always program");
         BH_DebugDraw_Shutdown(dd);
@@ -550,10 +622,11 @@ bool BH_DebugDraw_Init(BH_DebugDraw *dd, BH_Renderer *renderer, const char *asse
     }
 
     /* Depth-tested triangles */
-    pcfg.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+    pcfg.primitive_type = BH_GPU_PRIMITIVETYPE_TRIANGLELIST;
     pcfg.depth_stencil_state.enable_depth_test = true;
     if (!BH_ShaderProgram_LoadEx(&dd->tri_depth, renderer->device, vs_spv, vs_json, fs_spv, fs_json,
-                                 renderer->swapchain_format, renderer->depth_format, &pcfg, permanent_arena))
+                                 renderer->swapchain_format,
+                                 renderer->depth_format, &pcfg, permanent_arena))
     {
         SDL_Log("[bh][dbg] Failed to load debug tri_depth program");
         BH_DebugDraw_Shutdown(dd);
@@ -561,10 +634,11 @@ bool BH_DebugDraw_Init(BH_DebugDraw *dd, BH_Renderer *renderer, const char *asse
     }
 
     /* Always-draw triangles */
-    pcfg.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+    pcfg.primitive_type = BH_GPU_PRIMITIVETYPE_TRIANGLELIST;
     pcfg.depth_stencil_state.enable_depth_test = false;
     if (!BH_ShaderProgram_LoadEx(&dd->tri_always, renderer->device, vs_spv, vs_json, fs_spv, fs_json,
-                                 renderer->swapchain_format, renderer->depth_format, &pcfg, permanent_arena))
+                                 renderer->swapchain_format,
+                                 renderer->depth_format, &pcfg, permanent_arena))
     {
         SDL_Log("[bh][dbg] Failed to load debug tri_always program");
         BH_DebugDraw_Shutdown(dd);
@@ -601,13 +675,13 @@ void BH_DebugDraw_Shutdown(BH_DebugDraw *dd)
     if (dd->device)
     {
         if (dd->vb_line_depth)
-            SDL_ReleaseGPUBuffer(dd->device, dd->vb_line_depth);
+            BH_GPU_ReleaseBuffer(dd->device, dd->vb_line_depth);
         if (dd->vb_line_always)
-            SDL_ReleaseGPUBuffer(dd->device, dd->vb_line_always);
+            BH_GPU_ReleaseBuffer(dd->device, dd->vb_line_always);
         if (dd->vb_tri_depth)
-            SDL_ReleaseGPUBuffer(dd->device, dd->vb_tri_depth);
+            BH_GPU_ReleaseBuffer(dd->device, dd->vb_tri_depth);
         if (dd->vb_tri_always)
-            SDL_ReleaseGPUBuffer(dd->device, dd->vb_tri_always);
+            BH_GPU_ReleaseBuffer(dd->device, dd->vb_tri_always);
 
         BH_ShaderProgram_Release(&dd->line_depth, dd->device);
         BH_ShaderProgram_Release(&dd->line_always, dd->device);
@@ -618,7 +692,7 @@ void BH_DebugDraw_Shutdown(BH_DebugDraw *dd)
         {
             if (dd->pending_tbufs[i])
             {
-                SDL_ReleaseGPUTransferBuffer(dd->device, dd->pending_tbufs[i]);
+                BH_GPU_ReleaseTransferBuffer(dd->device, dd->pending_tbufs[i]);
             }
         }
     }

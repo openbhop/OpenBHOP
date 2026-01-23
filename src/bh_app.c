@@ -84,6 +84,27 @@ bool BH_App_Init(BH_App *app, const BH_AppConfig *cfg)
     (void)SDL_SetHint("SDL_MOUSE_RELATIVE_MODE_WARP", "0");
     (void)SDL_SetHint("SDL_MOUSE_RELATIVE_SCALING", "0");
 
+#ifdef __EMSCRIPTEN__
+    /*
+        In Emscripten builds we preload game assets into the virtual filesystem
+        at "/assets" (see CMakeLists.txt). SDL_GetBasePath() has different
+        semantics on the web, so we standardize on an absolute, Unix-like path.
+    */
+    app->base_path = SDL_strdup("/");
+    if (!app->base_path)
+    {
+        SDL_Quit();
+        return false;
+    }
+
+    app->asset_root = SDL_strdup("/assets");
+    if (!app->asset_root)
+    {
+        SDL_free(app->base_path);
+        SDL_Quit();
+        return false;
+    }
+#else
     char *sdl_owned_path = SDL_GetBasePath();
     if (!sdl_owned_path)
     {
@@ -93,6 +114,7 @@ bool BH_App_Init(BH_App *app, const BH_AppConfig *cfg)
     }
 
     app->base_path = SDL_strdup(sdl_owned_path);
+    SDL_free(sdl_owned_path);
     if (!app->base_path)
     {
         SDL_Quit();
@@ -111,8 +133,13 @@ bool BH_App_Init(BH_App *app, const BH_AppConfig *cfg)
         }
         SDL_snprintf(app->asset_root, len, "%s%s", app->base_path, suffix);
     }
+#endif
 
-    const int n = (cfg->num_windows > 0) ? cfg->num_windows : 1;
+    int n = (cfg->num_windows > 0) ? cfg->num_windows : 1;
+#ifdef __EMSCRIPTEN__
+    /* Browser builds should run a single instance (single canvas). */
+    n = 1;
+#endif
     app->game_count = n;
     app->games = (BH_Game *)calloc((size_t)n, sizeof(BH_Game));
 
@@ -199,6 +226,100 @@ void BH_App_Shutdown(BH_App *app)
 // Update & Render Loop
 // -----------------------------------------------------------------------------
 
+bool BH_App_Tick(BH_App *app)
+{
+    if (!app)
+    {
+        return false;
+    }
+
+    if (!bh_app_any_alive(app))
+    {
+        return false;
+    }
+
+    const uint64_t frame_start_ticks = SDL_GetPerformanceCounter();
+    if (!app->timing_initialized)
+    {
+        app->timing_freq = SDL_GetPerformanceFrequency();
+
+        app->timing_target_ns = 0.0;
+        if (app->target_fps > 0)
+        {
+            app->timing_target_ns = (1.0 / (double)app->target_fps) * 1e9;
+        }
+
+        app->timing_prev_ticks = frame_start_ticks;
+        app->timing_initialized = true;
+    }
+
+    const uint64_t delta_ticks = frame_start_ticks - app->timing_prev_ticks;
+    app->timing_prev_ticks = frame_start_ticks;
+
+    const double dt = (app->timing_freq > 0) ? ((double)delta_ticks / (double)app->timing_freq) : 0.0;
+
+    for (int i = 0; i < app->game_count; ++i)
+    {
+        if (app->games[i].alive)
+        {
+            BH_Input_BeginFrame(&app->games[i].input);
+        }
+    }
+
+    SDL_Event e;
+    while (SDL_PollEvent(&e))
+    {
+        if (e.type == SDL_EVENT_QUIT)
+        {
+            bh_app_close_all(app);
+            continue;
+        }
+
+        const SDL_WindowID wid = BH_Input_WindowIDFromSDLEvent(&e);
+        BH_Game *g = bh_app_find_game(app, wid);
+        if (g)
+        {
+            BH_Game_HandleEvent(g, &e);
+        }
+    }
+
+    for (int i = 0; i < app->game_count; ++i)
+    {
+        BH_Game *g = &app->games[i];
+        if (!g->alive)
+        {
+            continue;
+        }
+
+        BH_Game_Update(g, dt);
+
+        if (g->want_close)
+        {
+            BH_Game_Shutdown(g);
+        }
+    }
+
+    /*
+        In browser builds the outer main thread must not block; we let
+        Emscripten/SDL drive the cadence (requestAnimationFrame).
+    */
+#ifndef __EMSCRIPTEN__
+    if (app->timing_target_ns > 0.0)
+    {
+        const uint64_t frame_end_ticks = SDL_GetPerformanceCounter();
+        const uint64_t elapsed_ticks = frame_end_ticks - frame_start_ticks;
+        const double elapsed_ns = ((double)elapsed_ticks / (double)app->timing_freq) * 1e9;
+
+        if (elapsed_ns < app->timing_target_ns)
+        {
+            SDL_DelayNS((uint64_t)(app->timing_target_ns - elapsed_ns));
+        }
+    }
+#endif
+
+    return bh_app_any_alive(app);
+}
+
 int BH_App_Run(BH_App *app)
 {
     if (!app)
@@ -206,76 +327,9 @@ int BH_App_Run(BH_App *app)
         return 1;
     }
 
-    uint64_t prev = SDL_GetPerformanceCounter();
-    const uint64_t freq = SDL_GetPerformanceFrequency();
-
-    double target_ns = 0.0;
-    if (app->target_fps > 0)
+    while (BH_App_Tick(app))
     {
-        target_ns = (1.0 / (double)app->target_fps) * 1e9;
-    }
-
-    while (bh_app_any_alive(app))
-    {
-        const uint64_t frame_start_ticks = SDL_GetPerformanceCounter();
-        const uint64_t now = frame_start_ticks;
-        const uint64_t delta = now - prev;
-        prev = now;
-
-        const double dt = (freq > 0) ? ((double)delta / (double)freq) : 0.0;
-
-        for (int i = 0; i < app->game_count; ++i)
-        {
-            if (app->games[i].alive)
-            {
-                BH_Input_BeginFrame(&app->games[i].input);
-            }
-        }
-
-        SDL_Event e;
-        while (SDL_PollEvent(&e))
-        {
-            if (e.type == SDL_EVENT_QUIT)
-            {
-                bh_app_close_all(app);
-                continue;
-            }
-
-            const SDL_WindowID wid = BH_Input_WindowIDFromSDLEvent(&e);
-            BH_Game *g = bh_app_find_game(app, wid);
-            if (g)
-            {
-                BH_Game_HandleEvent(g, &e);
-            }
-        }
-
-        for (int i = 0; i < app->game_count; ++i)
-        {
-            BH_Game *g = &app->games[i];
-            if (!g->alive)
-            {
-                continue;
-            }
-
-            BH_Game_Update(g, dt);
-
-            if (g->want_close)
-            {
-                BH_Game_Shutdown(g);
-            }
-        }
-
-        if (target_ns > 0.0)
-        {
-            const uint64_t frame_end_ticks = SDL_GetPerformanceCounter();
-            const uint64_t elapsed_ticks = frame_end_ticks - frame_start_ticks;
-            const double elapsed_ns = ((double)elapsed_ticks / (double)freq) * 1e9;
-
-            if (elapsed_ns < target_ns)
-            {
-                SDL_DelayNS((uint64_t)(target_ns - elapsed_ns));
-            }
-        }
+        /* no-op */
     }
 
     return 0;

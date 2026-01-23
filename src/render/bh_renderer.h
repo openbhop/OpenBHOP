@@ -13,8 +13,11 @@
 #include "../core/bh_arena.h"
 #include "../math/bh_math.h"
 
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_gpu.h>
+/* Backend-agnostic GPU handles. */
+#include "bh_gpu.h"
+
+/* Note: This header intentionally avoids including any backend GPU headers.
+   Subsystems that still directly use SDL_gpu should include it themselves. */
 
 struct BH_Scene;
 
@@ -30,11 +33,11 @@ typedef struct BH_RendererConfig
 typedef struct BH_RenderPassHooks
 {
     /* Pre-pass: GPU copy/upload operations. */
-    void (*prepare)(void *user, SDL_GPUCommandBuffer *cmd, SDL_GPUCopyPass *copy_pass, const mat4 *view_proj,
+    void (*prepare)(void *user, BH_GPUCommandBuffer *cmd, BH_GPUCopyPass *copy_pass, const mat4 *view_proj,
                     uint32_t fb_width, uint32_t fb_height, float alpha);
 
     /* Main pass: Post-scene draw commands. */
-    void (*draw)(void *user, SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *render_pass, const mat4 *view_proj,
+    void (*draw)(void *user, BH_GPUCommandBuffer *cmd, BH_GPURenderPass *render_pass, const mat4 *view_proj,
                  uint32_t fb_width, uint32_t fb_height, float alpha);
 
     /* Post-submission: Resource cleanup (transfer buffers). */
@@ -45,13 +48,13 @@ typedef struct BH_RenderPassHooks
 
 typedef struct BH_Renderer
 {
-    SDL_GPUDevice *device;
-    SDL_Window *window;
+    BH_GPUDevice *device;
+    BH_Window *window;
 
-    SDL_GPUTextureFormat swapchain_format;
-    SDL_GPUTextureFormat depth_format;
+    BH_GPUTextureFormat swapchain_format;
+    BH_GPUTextureFormat depth_format;
 
-    SDL_GPUTexture *depth_texture;
+    BH_GPUTexture *depth_texture;
     uint32_t depth_width;
     uint32_t depth_height;
 
@@ -73,7 +76,7 @@ typedef struct BH_Renderer
 
 bool BH_Renderer_AddHooks(BH_Renderer *r, BH_RenderPassHooks hooks);
 
-bool BH_Renderer_Init(BH_Renderer *r, SDL_Window *window, const char *asset_root, const BH_RendererConfig *cfg,
+bool BH_Renderer_Init(BH_Renderer *r, BH_Window *window, const char *asset_root, const BH_RendererConfig *cfg,
                       BH_Arena *permanent_arena);
 
 void BH_Renderer_Shutdown(BH_Renderer *r);

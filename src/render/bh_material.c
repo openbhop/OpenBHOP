@@ -93,7 +93,7 @@ bool BH_ParamBlock_SetRaw(BH_ParamBlock *pb, const char *name, const void *data,
     return true;
 }
 
-void BH_ParamBlock_PushUniforms(const BH_ParamBlock *pb, SDL_GPUCommandBuffer *cmd)
+void BH_ParamBlock_PushUniforms(const BH_ParamBlock *pb, BH_GPUCommandBuffer *cmd)
 {
     if (!pb || !pb->refl || !cmd)
     {
@@ -112,11 +112,11 @@ void BH_ParamBlock_PushUniforms(const BH_ParamBlock *pb, SDL_GPUCommandBuffer *c
 
         if (pb->refl->stage == BH_SHADERSTAGE_VERTEX)
         {
-            SDL_PushGPUVertexUniformData(cmd, slot, data, size);
+            BH_GPU_PushVertexUniformData(cmd, slot, data, size);
         }
         else
         {
-            SDL_PushGPUFragmentUniformData(cmd, slot, data, size);
+            BH_GPU_PushFragmentUniformData(cmd, slot, data, size);
         }
     }
 }

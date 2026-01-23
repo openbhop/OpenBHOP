@@ -4,6 +4,8 @@
 #include "bh_renderer.h"
 #include "../scene/bh_scene.h"
 
+#include "bh_gpu.h"
+
 #include <SDL3/SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,8 +13,8 @@
 typedef struct BH_RenderDrawContext
 {
     BH_Renderer *renderer;
-    SDL_GPUCommandBuffer *cmd;
-    SDL_GPURenderPass *pass;
+    BH_GPUCommandBuffer *cmd;
+    BH_GPURenderPass *pass;
     const mat4 *view_proj;
     const BH_ShaderProgram *program;
 } BH_RenderDrawContext;
@@ -44,7 +46,7 @@ typedef struct BH_SceneSplitPassContext
    Internal Helpers: Uniforms & Binding
    ----------------------------------------------------------------------------- */
 
-static void bh_push_scene_fragment_uniforms(BH_Renderer *r, SDL_GPUCommandBuffer *cmd, const BH_Scene *scene,
+static void bh_push_scene_fragment_uniforms(BH_Renderer *r, BH_GPUCommandBuffer *cmd, const BH_Scene *scene,
                                             vec3 camera_pos)
 {
     /* Slot 1: Scene/Frame Fragment Uniforms */
@@ -81,7 +83,7 @@ static void bh_push_scene_fragment_uniforms(BH_Renderer *r, SDL_GPUCommandBuffer
     BH_ParamBlock_PushUniforms(&pb, cmd);
 }
 
-static SDL_GPUTexture *bh_default_tex_for_slot(BH_Renderer *r, uint32_t slot)
+static BH_GPUTexture *bh_default_tex_for_slot(BH_Renderer *r, uint32_t slot)
 {
     switch (slot)
     {
@@ -114,12 +116,12 @@ static void bh_bind_material(BH_RenderDrawContext *ctx, const BH_Material *mat)
 
     if (num > 0)
     {
-        SDL_GPUTextureSamplerBinding binds[BH_MATERIAL_TEX_COUNT] = {0};
-        SDL_GPUSampler *sam = BH_TextureManager_GetSampler(&ctx->renderer->textures);
+        BH_GPUTextureSamplerBinding binds[BH_MATERIAL_TEX_COUNT] = {0};
+        BH_GPUSampler *sam = BH_TextureManager_GetSampler(&ctx->renderer->textures);
 
         for (uint32_t i = 0; i < num; ++i)
         {
-            SDL_GPUTexture *tex = NULL;
+            BH_GPUTexture *tex = NULL;
             if (mat)
             {
                 tex = BH_TextureManager_GetGPUTexture(&ctx->renderer->textures, mat->textures[i]);
@@ -131,7 +133,7 @@ static void bh_bind_material(BH_RenderDrawContext *ctx, const BH_Material *mat)
             binds[i].texture = tex;
             binds[i].sampler = sam;
         }
-        SDL_BindGPUFragmentSamplers(ctx->pass, 0, binds, num);
+        BH_GPU_BindFragmentSamplers(ctx->pass, 0, binds, num);
     }
 
     if (mat)
@@ -140,7 +142,7 @@ static void bh_bind_material(BH_RenderDrawContext *ctx, const BH_Material *mat)
     }
 }
 
-static bool bh_push_per_draw_uniforms(const BH_ShaderProgram *prog, SDL_GPUCommandBuffer *cmd, const mat4 *view_proj,
+static bool bh_push_per_draw_uniforms(const BH_ShaderProgram *prog, BH_GPUCommandBuffer *cmd, const mat4 *view_proj,
                                       const mat4 *world)
 {
     const BH_UniformBufferReflection *per_draw_ub =
@@ -169,7 +171,7 @@ static bool bh_push_per_draw_uniforms(const BH_ShaderProgram *prog, SDL_GPUComma
     return true;
 }
 
-static bool bh_push_skybox_uniforms(const BH_ShaderProgram *prog, SDL_GPUCommandBuffer *cmd, const mat4 *view_proj,
+static bool bh_push_skybox_uniforms(const BH_ShaderProgram *prog, BH_GPUCommandBuffer *cmd, const mat4 *view_proj,
                                     const mat4 *world)
 {
     const BH_UniformBufferReflection *ub =
@@ -205,23 +207,23 @@ static bool bh_renderer_ensure_depth_texture(BH_Renderer *r, uint32_t w, uint32_
 
     if (r->depth_texture)
     {
-        SDL_ReleaseGPUTexture(r->device, r->depth_texture);
+        BH_GPU_ReleaseTexture(r->device, r->depth_texture);
         r->depth_texture = NULL;
     }
 
-    SDL_GPUTextureCreateInfo tci = {.type = SDL_GPU_TEXTURETYPE_2D,
-                                    .format = r->depth_format,
-                                    .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
-                                    .width = w,
-                                    .height = h,
-                                    .layer_count_or_depth = 1,
-                                    .num_levels = 1,
-                                    .sample_count = SDL_GPU_SAMPLECOUNT_1};
+    BH_GPUTextureCreateInfo tci = {.type = BH_GPU_TEXTURETYPE_2D,
+                                   .format = (BH_GPUTextureFormat)r->depth_format,
+                                   .usage = BH_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
+                                   .width = w,
+                                   .height = h,
+                                   .layer_count_or_depth = 1,
+                                   .num_levels = 1,
+                                   .sample_count = BH_GPU_SAMPLECOUNT_1};
 
-    r->depth_texture = SDL_CreateGPUTexture(r->device, &tci);
+    r->depth_texture = BH_GPU_CreateTexture(r->device, &tci);
     if (!r->depth_texture)
     {
-        SDL_Log("[bh] Depth texture creation failed: %s", SDL_GetError());
+        SDL_Log("[bh] Depth texture creation failed: %s", BH_GPU_GetLastError());
         r->depth_width = 0;
         r->depth_height = 0;
         return false;
@@ -286,11 +288,11 @@ static void bh_draw_scene_node_split(const BH_SceneNode *node, const mat4 *world
         return;
     }
 
-    SDL_GPUBufferBinding vb = {.buffer = mesh->vertex_buffer, .offset = 0};
-    SDL_BindGPUVertexBuffers(ctx->draw.pass, 0, &vb, 1);
+    BH_GPUBufferBinding vb = {.buffer = mesh->vertex_buffer, .offset = 0};
+    BH_GPU_BindVertexBuffers(ctx->draw.pass, 0, &vb, 1);
 
-    SDL_GPUBufferBinding ib = {.buffer = mesh->index_buffer, .offset = 0};
-    SDL_BindGPUIndexBuffer(ctx->draw.pass, &ib, mesh->index_element_size);
+    BH_GPUBufferBinding ib = {.buffer = mesh->index_buffer, .offset = 0};
+    BH_GPU_BindIndexBuffer(ctx->draw.pass, &ib, mesh->index_element_size);
 
     const BH_ShaderProgram *prog = ctx->draw.program ? ctx->draw.program : &ctx->draw.renderer->program;
     if (!bh_push_per_draw_uniforms(prog, ctx->draw.cmd, ctx->draw.view_proj, world))
@@ -316,7 +318,7 @@ static void bh_draw_scene_node_split(const BH_SceneNode *node, const mat4 *world
         }
 
         bh_bind_material(&ctx->draw, mat);
-        SDL_DrawGPUIndexedPrimitives(ctx->draw.pass, sm->index_count, 1, sm->first_index, 0, 0);
+        BH_GPU_DrawIndexedPrimitives(ctx->draw.pass, sm->index_count, 1, sm->first_index, 0, 0);
     }
 }
 
@@ -330,16 +332,16 @@ static void bh_draw_transparent_queue(BH_RenderDrawContext *draw, const BH_Trans
         if (!td->mesh || !td->submesh)
             continue;
 
-        SDL_GPUBufferBinding vb = {.buffer = td->mesh->vertex_buffer, .offset = 0};
-        SDL_BindGPUVertexBuffers(draw->pass, 0, &vb, 1);
+        BH_GPUBufferBinding vb = {.buffer = td->mesh->vertex_buffer, .offset = 0};
+        BH_GPU_BindVertexBuffers(draw->pass, 0, &vb, 1);
 
-        SDL_GPUBufferBinding ib = {.buffer = td->mesh->index_buffer, .offset = 0};
-        SDL_BindGPUIndexBuffer(draw->pass, &ib, td->mesh->index_element_size);
+        BH_GPUBufferBinding ib = {.buffer = td->mesh->index_buffer, .offset = 0};
+        BH_GPU_BindIndexBuffer(draw->pass, &ib, td->mesh->index_element_size);
 
         (void)bh_push_per_draw_uniforms(prog, draw->cmd, draw->view_proj, &td->world);
 
         bh_bind_material(draw, td->material);
-        SDL_DrawGPUIndexedPrimitives(draw->pass, td->submesh->index_count, 1, td->submesh->first_index, 0, 0);
+        BH_GPU_DrawIndexedPrimitives(draw->pass, td->submesh->index_count, 1, td->submesh->first_index, 0, 0);
     }
 }
 
@@ -363,7 +365,7 @@ bool BH_Renderer_AddHooks(BH_Renderer *r, BH_RenderPassHooks hooks)
     return true;
 }
 
-bool BH_Renderer_Init(BH_Renderer *r, SDL_Window *window, const char *asset_root, const BH_RendererConfig *cfg,
+bool BH_Renderer_Init(BH_Renderer *r, BH_Window *window, const char *asset_root, const BH_RendererConfig *cfg,
                       BH_Arena *permanent_arena)
 {
     if (!r || !window || !asset_root || !permanent_arena)
@@ -373,33 +375,38 @@ bool BH_Renderer_Init(BH_Renderer *r, SDL_Window *window, const char *asset_root
     r->window = window;
 
     const bool debug = cfg ? cfg->debug_gpu : false;
-    r->device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, debug, NULL);
+    const bool use_gl = (SDL_strcasecmp(BH_GPU_GetBackend()->name, "OpenGL") == 0);
+    const BH_GPUShaderFormat shader_format = use_gl ? BH_GPU_SHADERFORMAT_GLSL : BH_GPU_SHADERFORMAT_SPIRV;
+
+    r->device = BH_GPU_CreateDevice(shader_format, debug, NULL);
     if (!r->device)
     {
-        SDL_Log("[bh] SDL_CreateGPUDevice failed: %s", SDL_GetError());
+        SDL_Log("[bh] BH_GPU_CreateDevice failed: %s", BH_GPU_GetLastError());
         return false;
     }
 
-    if (!SDL_ClaimWindowForGPUDevice(r->device, window))
+    if (!BH_GPU_ClaimWindowForDevice(r->device, window))
     {
-        SDL_Log("[bh] Window claim failed: %s", SDL_GetError());
-        SDL_DestroyGPUDevice(r->device);
+        SDL_Log("[bh] Window claim failed: %s", BH_GPU_GetLastError());
+        BH_GPU_DestroyDevice(r->device);
+        r->device = NULL;
         return false;
     }
 
-    SDL_SetGPUSwapchainParameters(r->device, window, SDL_GPU_SWAPCHAINCOMPOSITION_SDR, SDL_GPU_PRESENTMODE_IMMEDIATE);
+    BH_GPU_SetSwapchainParameters(r->device, window, BH_GPU_SWAPCHAINCOMPOSITION_SDR, BH_GPU_PRESENTMODE_IMMEDIATE);
 
-    r->swapchain_format = SDL_GetGPUSwapchainTextureFormat(r->device, window);
-    r->depth_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
+    r->swapchain_format = BH_GPU_GetSwapchainTextureFormat(r->device, window);
+    r->depth_format = BH_GPU_GetTextureFormat_D32_FLOAT();
 
     char paths[4][1024];
-    SDL_snprintf(paths[0], 1024, "%s/shaders/compiled/basic.vert.spv", asset_root);
+    SDL_snprintf(paths[0], 1024, "%s/shaders/%s/basic.vert.%s", asset_root, use_gl ? "gl" : "compiled", use_gl ? "glsl" : "spv");
     SDL_snprintf(paths[1], 1024, "%s/shaders/compiled/basic.vert.json", asset_root);
-    SDL_snprintf(paths[2], 1024, "%s/shaders/compiled/basic.frag.spv", asset_root);
+    SDL_snprintf(paths[2], 1024, "%s/shaders/%s/basic.frag.%s", asset_root, use_gl ? "gl" : "compiled", use_gl ? "glsl" : "spv");
     SDL_snprintf(paths[3], 1024, "%s/shaders/compiled/basic.frag.json", asset_root);
 
-    if (!BH_ShaderProgram_Load(&r->program, r->device, paths[0], paths[1], paths[2], paths[3], r->swapchain_format,
-                               r->depth_format, permanent_arena))
+    if (!BH_ShaderProgram_Load(&r->program, r->device, paths[0], paths[1], paths[2], paths[3],
+                               r->swapchain_format, r->depth_format,
+                               permanent_arena))
     {
         BH_Renderer_Shutdown(r);
         return false;
@@ -407,37 +414,38 @@ bool BH_Renderer_Init(BH_Renderer *r, SDL_Window *window, const char *asset_root
 
     /* Transparent Pipeline */
     {
-        SDL_GPUVertexAttribute attrs[] = {
-            {.location = 0, .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, .offset = 0},
-            {.location = 1, .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, .offset = 12},
-            {.location = 2, .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, .offset = 24},
-            {.location = 3, .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, .offset = 32},
+        BH_GPUVertexAttribute attrs[] = {
+            {.location = 0, .format = BH_GPU_VERTEXELEMENTFORMAT_FLOAT3, .offset = 0},
+            {.location = 1, .format = BH_GPU_VERTEXELEMENTFORMAT_FLOAT3, .offset = 12},
+            {.location = 2, .format = BH_GPU_VERTEXELEMENTFORMAT_FLOAT2, .offset = 24},
+            {.location = 3, .format = BH_GPU_VERTEXELEMENTFORMAT_FLOAT2, .offset = 32},
         };
-        SDL_GPUVertexBufferDescription vbs[] = {
-            {.slot = 0, .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX, .pitch = sizeof(BH_Vertex)}};
+        BH_GPUVertexBufferDescription vbs[] = {
+            {.slot = 0, .input_rate = BH_GPU_VERTEXINPUTRATE_VERTEX, .pitch = sizeof(BH_Vertex)}};
 
         BH_ShaderProgramPipelineConfig pcfg = {
             .vertex_input = {.num_vertex_buffers = 1,
                              .vertex_buffer_descriptions = vbs,
                              .num_vertex_attributes = 4,
                              .vertex_attributes = attrs},
-            .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
-            .rasterizer_state = {.fill_mode = SDL_GPU_FILLMODE_FILL, .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE},
-            .multisample_state = {.sample_count = SDL_GPU_SAMPLECOUNT_1},
+            .primitive_type = BH_GPU_PRIMITIVETYPE_TRIANGLELIST,
+            .rasterizer_state = {.fill_mode = BH_GPU_FILLMODE_FILL, .front_face = BH_GPU_FRONTFACE_COUNTER_CLOCKWISE},
+            .multisample_state = {.sample_count = BH_GPU_SAMPLECOUNT_1},
             .depth_stencil_state = {.enable_depth_test = true,
                                     .enable_depth_write = false,
-                                    .compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL},
+                                    .compare_op = BH_GPU_COMPAREOP_LESS_OR_EQUAL},
             .blend_state = {.enable_blend = true,
-                            .src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
-                            .dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-                            .color_blend_op = SDL_GPU_BLENDOP_ADD,
-                            .src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
-                            .dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-                            .alpha_blend_op = SDL_GPU_BLENDOP_ADD},
+                            .src_color_blendfactor = BH_GPU_BLENDFACTOR_SRC_ALPHA,
+                            .dst_color_blendfactor = BH_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+                            .color_blend_op = BH_GPU_BLENDOP_ADD,
+                            .src_alpha_blendfactor = BH_GPU_BLENDFACTOR_ONE,
+                            .dst_alpha_blendfactor = BH_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+                            .alpha_blend_op = BH_GPU_BLENDOP_ADD},
             .has_depth_stencil_target = true};
 
-        if (!BH_ShaderProgram_LoadEx(&r->program_transparent, r->device, paths[0], paths[1], paths[2], paths[3],
-                                     r->swapchain_format, r->depth_format, &pcfg, permanent_arena))
+        if (!BH_ShaderProgram_LoadEx(&r->program_transparent, r->device, paths[0], paths[1], paths[2],
+                                     paths[3], r->swapchain_format,
+                                     r->depth_format, &pcfg, permanent_arena))
         {
             BH_Renderer_Shutdown(r);
             return false;
@@ -447,33 +455,36 @@ bool BH_Renderer_Init(BH_Renderer *r, SDL_Window *window, const char *asset_root
     /* Skybox Pipeline */
     {
         char sky_paths[4][1024];
-        SDL_snprintf(sky_paths[0], 1024, "%s/shaders/compiled/skybox.vert.spv", asset_root);
+        SDL_snprintf(sky_paths[0], 1024, "%s/shaders/%s/skybox.vert.%s", asset_root, use_gl ? "gl" : "compiled",
+                     use_gl ? "glsl" : "spv");
         SDL_snprintf(sky_paths[1], 1024, "%s/shaders/compiled/skybox.vert.json", asset_root);
-        SDL_snprintf(sky_paths[2], 1024, "%s/shaders/compiled/skybox.frag.spv", asset_root);
+        SDL_snprintf(sky_paths[2], 1024, "%s/shaders/%s/skybox.frag.%s", asset_root, use_gl ? "gl" : "compiled",
+                     use_gl ? "glsl" : "spv");
         SDL_snprintf(sky_paths[3], 1024, "%s/shaders/compiled/skybox.frag.json", asset_root);
 
-        SDL_GPUVertexAttribute attrs[] = {
-            {.location = 0, .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, .offset = 0},
-            {.location = 1, .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, .offset = 12},
-            {.location = 2, .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, .offset = 24},
-            {.location = 3, .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, .offset = 32},
+        BH_GPUVertexAttribute attrs[] = {
+            {.location = 0, .format = BH_GPU_VERTEXELEMENTFORMAT_FLOAT3, .offset = 0},
+            {.location = 1, .format = BH_GPU_VERTEXELEMENTFORMAT_FLOAT3, .offset = 12},
+            {.location = 2, .format = BH_GPU_VERTEXELEMENTFORMAT_FLOAT2, .offset = 24},
+            {.location = 3, .format = BH_GPU_VERTEXELEMENTFORMAT_FLOAT2, .offset = 32},
         };
-        SDL_GPUVertexBufferDescription vbs[] = {
-            {.slot = 0, .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX, .pitch = sizeof(BH_Vertex)}};
+        BH_GPUVertexBufferDescription vbs[] = {
+            {.slot = 0, .input_rate = BH_GPU_VERTEXINPUTRATE_VERTEX, .pitch = sizeof(BH_Vertex)}};
 
         BH_ShaderProgramPipelineConfig pcfg = {
             .vertex_input = {.num_vertex_buffers = 1,
                              .vertex_buffer_descriptions = vbs,
                              .num_vertex_attributes = 4,
                              .vertex_attributes = attrs},
-            .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
-            .rasterizer_state = {.fill_mode = SDL_GPU_FILLMODE_FILL, .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE},
-            .multisample_state = {.sample_count = SDL_GPU_SAMPLECOUNT_1},
-            .depth_stencil_state = {.enable_depth_test = false, .compare_op = SDL_GPU_COMPAREOP_ALWAYS},
+            .primitive_type = BH_GPU_PRIMITIVETYPE_TRIANGLELIST,
+            .rasterizer_state = {.fill_mode = BH_GPU_FILLMODE_FILL, .front_face = BH_GPU_FRONTFACE_COUNTER_CLOCKWISE},
+            .multisample_state = {.sample_count = BH_GPU_SAMPLECOUNT_1},
+            .depth_stencil_state = {.enable_depth_test = false, .compare_op = BH_GPU_COMPAREOP_ALWAYS},
             .has_depth_stencil_target = true};
 
-        if (!BH_ShaderProgram_LoadEx(&r->program_skybox, r->device, sky_paths[0], sky_paths[1], sky_paths[2],
-                                     sky_paths[3], r->swapchain_format, r->depth_format, &pcfg, permanent_arena))
+        if (!BH_ShaderProgram_LoadEx(&r->program_skybox, r->device, sky_paths[0], sky_paths[1],
+                                     sky_paths[2], sky_paths[3], r->swapchain_format,
+                                     r->depth_format, &pcfg, permanent_arena))
         {
             BH_Renderer_Shutdown(r);
             return false;
@@ -509,14 +520,14 @@ void BH_Renderer_Shutdown(BH_Renderer *r)
 
     if (r->device)
     {
-        SDL_WaitForGPUIdle(r->device);
+        BH_GPU_WaitForIdle(r->device);
 
         BH_MaterialManager_Shutdown(&r->materials);
         BH_TextureManager_Shutdown(&r->textures);
 
         if (r->depth_texture)
         {
-            SDL_ReleaseGPUTexture(r->device, r->depth_texture);
+            BH_GPU_ReleaseTexture(r->device, r->depth_texture);
         }
 
         if (r->skybox_mesh_created)
@@ -530,10 +541,10 @@ void BH_Renderer_Shutdown(BH_Renderer *r)
 
         if (r->window)
         {
-            SDL_ReleaseWindowFromGPUDevice(r->device, r->window);
+            BH_GPU_ReleaseWindowFromDevice(r->device, r->window);
         }
 
-        SDL_DestroyGPUDevice(r->device);
+        BH_GPU_DestroyDevice(r->device);
     }
     *r = (BH_Renderer){0};
 }
@@ -543,33 +554,33 @@ void BH_Renderer_RenderScene(BH_Renderer *r, const BH_Scene *scene, const mat4 *
     if (!r || !r->device || !r->window || !scene || !view_proj)
         return;
 
-    SDL_GPUCommandBuffer *cmd = SDL_AcquireGPUCommandBuffer(r->device);
+    BH_GPUCommandBuffer *cmd = BH_GPU_AcquireCommandBuffer(r->device);
     if (!cmd)
         return;
 
     bool submit_ok = false;
-    SDL_GPUTexture *swap_tex = NULL;
+    BH_GPUTexture *swap_tex = NULL;
     uint32_t w = 0, h = 0;
 
-    SDL_WaitAndAcquireGPUSwapchainTexture(cmd, r->window, &swap_tex, &w, &h);
+    BH_GPU_WaitAndAcquireSwapchainTexture(cmd, r->window, &swap_tex, &w, &h);
 
     if (!swap_tex || w == 0 || h == 0)
     {
-        SDL_CancelGPUCommandBuffer(cmd);
+        BH_GPU_CancelCommandBuffer(cmd);
         cmd = NULL;
         goto end_frame;
     }
 
     if (!bh_renderer_ensure_depth_texture(r, w, h))
     {
-        SDL_CancelGPUCommandBuffer(cmd);
+        BH_GPU_CancelCommandBuffer(cmd);
         cmd = NULL;
         goto end_frame;
     }
 
     /* Hook: Prepare (Uploads/Copies) */
     {
-        SDL_GPUCopyPass *copy_pass = SDL_BeginGPUCopyPass(cmd);
+        BH_GPUCopyPass *copy_pass = BH_GPU_BeginCopyPass(cmd);
         if (copy_pass)
         {
             for (uint32_t i = 0; i < r->hook_count; ++i)
@@ -579,50 +590,50 @@ void BH_Renderer_RenderScene(BH_Renderer *r, const BH_Scene *scene, const mat4 *
                     r->hooks[i].prepare(r->hooks[i].user, cmd, copy_pass, view_proj, w, h, alpha);
                 }
             }
-            SDL_EndGPUCopyPass(copy_pass);
+            BH_GPU_EndCopyPass(copy_pass);
         }
     }
 
-    SDL_GPUColorTargetInfo color = {.texture = swap_tex,
-                                    .clear_color = {0.0f, 0.0f, 0.0f, 1.0f},
-                                    .load_op = SDL_GPU_LOADOP_CLEAR,
-                                    .store_op = SDL_GPU_STOREOP_STORE};
+    BH_GPUColorTargetInfo color = {.texture = swap_tex,
+                                   .clear_color = {0.0f, 0.0f, 0.0f, 1.0f},
+                                   .load_op = BH_GPU_LOADOP_CLEAR,
+                                   .store_op = BH_GPU_STOREOP_STORE};
 
-    SDL_GPUDepthStencilTargetInfo depth = {.texture = r->depth_texture,
-                                           .clear_depth = 1.0f,
-                                           .load_op = SDL_GPU_LOADOP_CLEAR,
-                                           .store_op = SDL_GPU_STOREOP_DONT_CARE};
+    BH_GPUDepthStencilTargetInfo depth = {.texture = r->depth_texture,
+                                          .clear_depth = 1.0f,
+                                          .load_op = BH_GPU_LOADOP_CLEAR,
+                                          .store_op = BH_GPU_STOREOP_DONT_CARE};
 
-    SDL_GPURenderPass *pass = SDL_BeginGPURenderPass(cmd, &color, 1, &depth);
+    BH_GPURenderPass *pass = BH_GPU_BeginRenderPass(cmd, &color, 1, &depth);
     if (!pass)
     {
-        SDL_CancelGPUCommandBuffer(cmd);
+        BH_GPU_CancelCommandBuffer(cmd);
         cmd = NULL;
         goto end_frame;
     }
 
-    SDL_SetGPUViewport(pass, &(SDL_GPUViewport){0.0f, 0.0f, (float)w, (float)h, 0.0f, 1.0f});
-    SDL_SetGPUScissor(pass, &(SDL_Rect){0, 0, (int)w, (int)h});
+    BH_GPU_SetViewport(pass, &(BH_GPUViewport){0.0f, 0.0f, (float)w, (float)h, 0.0f, 1.0f});
+    BH_GPU_SetScissor(pass, &(BH_GPU_Rect){0, 0, (int32_t)w, (int32_t)h});
 
     /* Skybox Pass */
     if (r->program_skybox.pipeline && r->skybox_mesh_created)
     {
-        SDL_BindGPUGraphicsPipeline(pass, r->program_skybox.pipeline);
+        BH_GPU_BindGraphicsPipeline(pass, r->program_skybox.pipeline);
 
-        SDL_GPUBufferBinding vb = {.buffer = r->skybox_mesh.vertex_buffer, .offset = 0};
-        SDL_BindGPUVertexBuffers(pass, 0, &vb, 1);
+        BH_GPUBufferBinding vb = {.buffer = r->skybox_mesh.vertex_buffer, .offset = 0};
+        BH_GPU_BindVertexBuffers(pass, 0, &vb, 1);
 
-        SDL_GPUBufferBinding ib = {.buffer = r->skybox_mesh.index_buffer, .offset = 0};
-        SDL_BindGPUIndexBuffer(pass, &ib, r->skybox_mesh.index_element_size);
+        BH_GPUBufferBinding ib = {.buffer = r->skybox_mesh.index_buffer, .offset = 0};
+        BH_GPU_BindIndexBuffer(pass, &ib, r->skybox_mesh.index_element_size);
 
         const mat4 sky_world = mat4_translate(camera_pos);
         (void)bh_push_skybox_uniforms(&r->program_skybox, cmd, view_proj, &sky_world);
 
-        SDL_DrawGPUIndexedPrimitives(pass, r->skybox_mesh.index_count, 1, 0, 0, 0);
+        BH_GPU_DrawIndexedPrimitives(pass, r->skybox_mesh.index_count, 1, 0, 0, 0);
     }
 
     /* Opaque Pass */
-    SDL_BindGPUGraphicsPipeline(pass, r->program.pipeline);
+    BH_GPU_BindGraphicsPipeline(pass, r->program.pipeline);
     bh_push_scene_fragment_uniforms(r, cmd, scene, camera_pos);
 
     BH_TransparentQueue transparent = {0};
@@ -638,7 +649,7 @@ void BH_Renderer_RenderScene(BH_Renderer *r, const BH_Scene *scene, const mat4 *
     {
         qsort(transparent.items, transparent.count, sizeof(BH_TransparentDraw), bh_cmp_transparent_back_to_front);
 
-        SDL_BindGPUGraphicsPipeline(pass, r->program_transparent.pipeline);
+        BH_GPU_BindGraphicsPipeline(pass, r->program_transparent.pipeline);
         bh_push_scene_fragment_uniforms(r, cmd, scene, camera_pos);
 
         BH_RenderDrawContext tctx = split.draw;
@@ -655,9 +666,9 @@ void BH_Renderer_RenderScene(BH_Renderer *r, const BH_Scene *scene, const mat4 *
         }
     }
 
-    SDL_EndGPURenderPass(pass);
+    BH_GPU_EndRenderPass(pass);
 
-    submit_ok = SDL_SubmitGPUCommandBuffer(cmd);
+    submit_ok = BH_GPU_SubmitCommandBuffer(cmd);
     cmd = NULL;
 
 end_frame:

@@ -3,16 +3,19 @@
    ----------------------------------------------------------------------------- */
 
 #include "bh_shader_program.h"
+#include "bh_gpu.h"
 #include "../core/bh_file.h"
+
 #include <SDL3/SDL.h>
 #include <stddef.h>
+#include <string.h>
 
 /* -----------------------------------------------------------------------------
    Internal Helpers
    ----------------------------------------------------------------------------- */
 
-static SDL_GPUShader *bh_create_shader_from_spirv(SDL_GPUDevice *device, SDL_GPUShaderStage stage, const char *spv_path,
-                                                  const BH_ShaderStageReflection *refl)
+static BH_GPUShader *bh_create_shader_from_spirv(BH_GPUDevice *device, BH_GPUShaderStage stage, const char *spv_path,
+                                                 const BH_ShaderStageReflection *refl)
 {
     BH_FileData fd = {0};
     if (!BH_File_ReadAll(spv_path, &fd))
@@ -21,33 +24,97 @@ static SDL_GPUShader *bh_create_shader_from_spirv(SDL_GPUDevice *device, SDL_GPU
         return NULL;
     }
 
-    SDL_GPUShaderCreateInfo ci = {.code = fd.data,
-                                  .code_size = fd.size,
-                                  .entrypoint = (refl && refl->entry) ? refl->entry : NULL,
-                                  .format = SDL_GPU_SHADERFORMAT_SPIRV,
-                                  .stage = stage,
-                                  .num_samplers = refl ? refl->num_samplers : 0,
-                                  .num_storage_textures = refl ? refl->num_storage_textures : 0,
-                                  .num_storage_buffers = refl ? refl->num_storage_buffers : 0,
-                                  .num_uniform_buffers = refl ? refl->num_uniform_buffers : 0};
+    BH_GPUShaderCreateInfo ci = {0};
+    ci.code = fd.data;
+    ci.code_size = fd.size;
+    ci.entrypoint = (refl && refl->entry && refl->entry[0]) ? refl->entry : "main";
+    ci.format = BH_GPU_SHADERFORMAT_SPIRV;
+    ci.stage = stage;
 
-    SDL_GPUShader *shader = SDL_CreateGPUShader(device, &ci);
+    ci.num_samplers = refl ? refl->num_samplers : 0;
+    ci.num_storage_textures = refl ? refl->num_storage_textures : 0;
+    ci.num_storage_buffers = refl ? refl->num_storage_buffers : 0;
+    ci.num_uniform_buffers = refl ? refl->num_uniform_buffers : 0;
+
+    BH_GPUShader *shader = BH_GPU_CreateShader(device, &ci);
     if (!shader)
     {
-        SDL_Log("[bh] SDL_CreateGPUShader failed for %s: %s", spv_path, SDL_GetError());
+        SDL_Log("[bh] BH_GPU_CreateShader failed for %s: %s", spv_path, BH_GPU_GetLastError());
     }
 
     BH_File_Free(&fd);
     return shader;
 }
 
+static bool bh_path_has_ext(const char *path, const char *ext)
+{
+    if (!path || !ext)
+    {
+        return false;
+    }
+
+    const size_t path_len = strlen(path);
+    const size_t ext_len = strlen(ext);
+    if (path_len < ext_len)
+    {
+        return false;
+    }
+
+    return SDL_strcasecmp(path + path_len - ext_len, ext) == 0;
+}
+
+static BH_GPUShader *bh_create_shader_from_glsl(BH_GPUDevice *device, BH_GPUShaderStage stage, const char *glsl_path,
+                                                const BH_ShaderStageReflection *refl)
+{
+    BH_FileData fd = {0};
+    if (!BH_File_ReadAll(glsl_path, &fd))
+    {
+        SDL_Log("[bh] Failed to read shader: %s", glsl_path);
+        return NULL;
+    }
+
+    BH_GPUShaderCreateInfo ci = {0};
+    ci.code = fd.data;
+    ci.code_size = fd.size;
+    // GLSL always uses 'main' in this project.
+    ci.entrypoint = "main";
+    ci.format = BH_GPU_SHADERFORMAT_GLSL;
+    ci.stage = stage;
+
+    ci.num_samplers = refl ? refl->num_samplers : 0;
+    ci.num_storage_textures = refl ? refl->num_storage_textures : 0;
+    ci.num_storage_buffers = refl ? refl->num_storage_buffers : 0;
+    ci.num_uniform_buffers = refl ? refl->num_uniform_buffers : 0;
+
+    BH_GPUShader *shader = BH_GPU_CreateShader(device, &ci);
+    if (!shader)
+    {
+        SDL_Log("[bh] BH_GPU_CreateShader failed for %s: %s", glsl_path, BH_GPU_GetLastError());
+    }
+
+    BH_File_Free(&fd);
+    return shader;
+}
+
+static BH_GPUShader *bh_create_shader_from_file(BH_GPUDevice *device, BH_GPUShaderStage stage, const char *path,
+                                                const BH_ShaderStageReflection *refl)
+{
+    if (bh_path_has_ext(path, ".glsl"))
+    {
+        return bh_create_shader_from_glsl(device, stage, path, refl);
+    }
+
+    // Default to SPIR-V (compiled pipeline).
+    return bh_create_shader_from_spirv(device, stage, path, refl);
+}
+
 /* -----------------------------------------------------------------------------
    Public API
    ----------------------------------------------------------------------------- */
 
-bool BH_ShaderProgram_Load(BH_ShaderProgram *out_prog, SDL_GPUDevice *device, const char *vs_spv_path,
+bool BH_ShaderProgram_Load(BH_ShaderProgram *out_prog, BH_GPUDevice *device, const char *vs_spv_path,
                            const char *vs_json_path, const char *fs_spv_path, const char *fs_json_path,
-                           SDL_GPUTextureFormat color_format, SDL_GPUTextureFormat depth_format,
+                           BH_GPUTextureFormat color_format, BH_GPUTextureFormat depth_format,
                            BH_Arena *permanent_arena)
 {
     if (!out_prog || !device || !vs_spv_path || !vs_json_path || !fs_spv_path || !fs_json_path || !permanent_arena)
@@ -55,40 +122,40 @@ bool BH_ShaderProgram_Load(BH_ShaderProgram *out_prog, SDL_GPUDevice *device, co
         return false;
     }
 
-    SDL_GPUVertexBufferDescription vb_desc = {.slot = 0,
-                                              .pitch = (uint32_t)sizeof(BH_Vertex),
-                                              .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
-                                              .instance_step_rate = 0};
+    BH_GPUVertexBufferDescription vb_desc = {.slot = 0,
+                                             .pitch = (uint32_t)sizeof(BH_Vertex),
+                                             .input_rate = BH_GPU_VERTEXINPUTRATE_VERTEX,
+                                             .instance_step_rate = 0};
 
-    SDL_GPUVertexAttribute attrs[] = {{.location = 0,
-                                       .buffer_slot = 0,
-                                       .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                                       .offset = (uint32_t)offsetof(BH_Vertex, position)},
-                                      {.location = 1,
-                                       .buffer_slot = 0,
-                                       .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                                       .offset = (uint32_t)offsetof(BH_Vertex, normal)},
-                                      {.location = 2,
-                                       .buffer_slot = 0,
-                                       .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
-                                       .offset = (uint32_t)offsetof(BH_Vertex, uv)},
-                                      {.location = 3,
-                                       .buffer_slot = 0,
-                                       .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
-                                       .offset = (uint32_t)offsetof(BH_Vertex, uv2)}};
+    BH_GPUVertexAttribute attrs[] = {{.location = 0,
+                                      .buffer_slot = 0,
+                                      .format = BH_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                                      .offset = (uint32_t)offsetof(BH_Vertex, position)},
+                                     {.location = 1,
+                                      .buffer_slot = 0,
+                                      .format = BH_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                                      .offset = (uint32_t)offsetof(BH_Vertex, normal)},
+                                     {.location = 2,
+                                      .buffer_slot = 0,
+                                      .format = BH_GPU_VERTEXELEMENTFORMAT_FLOAT2,
+                                      .offset = (uint32_t)offsetof(BH_Vertex, uv)},
+                                     {.location = 3,
+                                      .buffer_slot = 0,
+                                      .format = BH_GPU_VERTEXELEMENTFORMAT_FLOAT2,
+                                      .offset = (uint32_t)offsetof(BH_Vertex, uv2)}};
 
     BH_ShaderProgramPipelineConfig pcfg = {.vertex_input = {.vertex_buffer_descriptions = &vb_desc,
                                                             .num_vertex_buffers = 1,
                                                             .vertex_attributes = attrs,
                                                             .num_vertex_attributes = 4},
-                                           .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
-                                           .rasterizer_state = {.fill_mode = SDL_GPU_FILLMODE_FILL,
-                                                                .cull_mode = SDL_GPU_CULLMODE_NONE,
-                                                                .front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE},
-                                           .multisample_state = {.sample_count = SDL_GPU_SAMPLECOUNT_1},
+                                           .primitive_type = BH_GPU_PRIMITIVETYPE_TRIANGLELIST,
+                                           .rasterizer_state = {.fill_mode = BH_GPU_FILLMODE_FILL,
+                                                                .cull_mode = BH_GPU_CULLMODE_NONE,
+                                                                .front_face = BH_GPU_FRONTFACE_COUNTER_CLOCKWISE},
+                                           .multisample_state = {.sample_count = BH_GPU_SAMPLECOUNT_1},
                                            .depth_stencil_state = {.enable_depth_test = true,
                                                                    .enable_depth_write = true,
-                                                                   .compare_op = SDL_GPU_COMPAREOP_LESS_OR_EQUAL},
+                                                                   .compare_op = BH_GPU_COMPAREOP_LESS_OR_EQUAL},
                                            .blend_state = {.enable_blend = false, .enable_color_write_mask = false},
                                            .has_depth_stencil_target = true};
 
@@ -96,9 +163,9 @@ bool BH_ShaderProgram_Load(BH_ShaderProgram *out_prog, SDL_GPUDevice *device, co
                                    depth_format, &pcfg, permanent_arena);
 }
 
-bool BH_ShaderProgram_LoadEx(BH_ShaderProgram *out_prog, SDL_GPUDevice *device, const char *vs_spv_path,
+bool BH_ShaderProgram_LoadEx(BH_ShaderProgram *out_prog, BH_GPUDevice *device, const char *vs_spv_path,
                              const char *vs_json_path, const char *fs_spv_path, const char *fs_json_path,
-                             SDL_GPUTextureFormat color_format, SDL_GPUTextureFormat depth_format,
+                             BH_GPUTextureFormat color_format, BH_GPUTextureFormat depth_format,
                              const BH_ShaderProgramPipelineConfig *pipeline_cfg, BH_Arena *permanent_arena)
 {
     if (!out_prog || !device || !vs_spv_path || !vs_json_path || !fs_spv_path || !fs_json_path || !pipeline_cfg ||
@@ -118,8 +185,8 @@ bool BH_ShaderProgram_LoadEx(BH_ShaderProgram *out_prog, SDL_GPUDevice *device, 
         return false;
     }
 
-    out_prog->vs = bh_create_shader_from_spirv(device, SDL_GPU_SHADERSTAGE_VERTEX, vs_spv_path, &out_prog->vs_refl);
-    out_prog->fs = bh_create_shader_from_spirv(device, SDL_GPU_SHADERSTAGE_FRAGMENT, fs_spv_path, &out_prog->fs_refl);
+    out_prog->vs = bh_create_shader_from_file(device, BH_GPU_SHADERSTAGE_VERTEX, vs_spv_path, &out_prog->vs_refl);
+    out_prog->fs = bh_create_shader_from_file(device, BH_GPU_SHADERSTAGE_FRAGMENT, fs_spv_path, &out_prog->fs_refl);
 
     if (!out_prog->vs || !out_prog->fs)
     {
@@ -127,25 +194,25 @@ bool BH_ShaderProgram_LoadEx(BH_ShaderProgram *out_prog, SDL_GPUDevice *device, 
         return false;
     }
 
-    SDL_GPUColorTargetDescription color_desc = {.format = color_format, .blend_state = pipeline_cfg->blend_state};
+    BH_GPUColorTargetDescription color_desc = {.format = color_format, .blend_state = pipeline_cfg->blend_state};
 
-    SDL_GPUGraphicsPipelineCreateInfo pci = {
-        .vertex_shader = out_prog->vs,
-        .fragment_shader = out_prog->fs,
-        .vertex_input_state = pipeline_cfg->vertex_input,
-        .primitive_type = pipeline_cfg->primitive_type,
-        .rasterizer_state = pipeline_cfg->rasterizer_state,
-        .multisample_state = pipeline_cfg->multisample_state,
-        .depth_stencil_state = pipeline_cfg->depth_stencil_state,
-        .target_info = {.color_target_descriptions = &color_desc,
-                        .num_color_targets = 1,
-                        .depth_stencil_format = depth_format,
-                        .has_depth_stencil_target = pipeline_cfg->has_depth_stencil_target}};
+    BH_GPUGraphicsPipelineCreateInfo pci = {0};
+    pci.vertex_shader = out_prog->vs;
+    pci.fragment_shader = out_prog->fs;
+    pci.vertex_input_state = pipeline_cfg->vertex_input;
+    pci.primitive_type = pipeline_cfg->primitive_type;
+    pci.rasterizer_state = pipeline_cfg->rasterizer_state;
+    pci.multisample_state = pipeline_cfg->multisample_state;
+    pci.depth_stencil_state = pipeline_cfg->depth_stencil_state;
+    pci.target_info.color_target_descriptions = &color_desc;
+    pci.target_info.num_color_targets = 1;
+    pci.target_info.depth_stencil_format = depth_format;
+    pci.target_info.has_depth_stencil_target = pipeline_cfg->has_depth_stencil_target;
 
-    out_prog->pipeline = SDL_CreateGPUGraphicsPipeline(device, &pci);
+    out_prog->pipeline = BH_GPU_CreateGraphicsPipeline(device, &pci);
     if (!out_prog->pipeline)
     {
-        SDL_Log("[bh] SDL_CreateGPUGraphicsPipeline failed: %s", SDL_GetError());
+        SDL_Log("[bh] BH_GPU_CreateGraphicsPipeline failed: %s", BH_GPU_GetLastError());
         BH_ShaderProgram_Release(out_prog, device);
         return false;
     }
@@ -153,7 +220,7 @@ bool BH_ShaderProgram_LoadEx(BH_ShaderProgram *out_prog, SDL_GPUDevice *device, 
     return true;
 }
 
-void BH_ShaderProgram_Release(BH_ShaderProgram *prog, SDL_GPUDevice *device)
+void BH_ShaderProgram_Release(BH_ShaderProgram *prog, BH_GPUDevice *device)
 {
     if (!prog || !device)
     {
@@ -162,15 +229,15 @@ void BH_ShaderProgram_Release(BH_ShaderProgram *prog, SDL_GPUDevice *device)
 
     if (prog->pipeline)
     {
-        SDL_ReleaseGPUGraphicsPipeline(device, prog->pipeline);
+        BH_GPU_ReleaseGraphicsPipeline(device, prog->pipeline);
     }
     if (prog->vs)
     {
-        SDL_ReleaseGPUShader(device, prog->vs);
+        BH_GPU_ReleaseShader(device, prog->vs);
     }
     if (prog->fs)
     {
-        SDL_ReleaseGPUShader(device, prog->fs);
+        BH_GPU_ReleaseShader(device, prog->fs);
     }
 
     *prog = (BH_ShaderProgram){0};

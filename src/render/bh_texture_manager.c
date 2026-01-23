@@ -26,87 +26,88 @@ static const char *bh_arena_strdup0(BH_Arena *arena, const char *s)
     return dst;
 }
 
-static SDL_GPUTexture *bh_upload_rgba8_texture(SDL_GPUDevice *device, const void *pixels_rgba8, uint32_t w, uint32_t h,
-                                               uint32_t pitch_bytes, SDL_GPUTextureFormat fmt)
+static BH_GPUTexture *bh_upload_rgba8_texture(BH_GPUDevice *device, const void *pixels_rgba8, uint32_t w, uint32_t h,
+                                               uint32_t pitch_bytes, BH_GPUTextureFormat fmt)
 {
     SDL_assert(device && pixels_rgba8 && w > 0 && h > 0 && pitch_bytes > 0);
 
-    SDL_GPUTextureCreateInfo tci = {.type = SDL_GPU_TEXTURETYPE_2D,
-                                    .format = fmt,
-                                    .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER,
-                                    .width = w,
-                                    .height = h,
-                                    .layer_count_or_depth = 1,
-                                    .num_levels = 1,
-                                    .sample_count = SDL_GPU_SAMPLECOUNT_1};
+    BH_GPUTextureCreateInfo tci = {.type = BH_GPU_TEXTURETYPE_2D,
+                                   .format = fmt,
+                                   .usage = BH_GPU_TEXTUREUSAGE_SAMPLER,
+                                   .width = w,
+                                   .height = h,
+                                   .layer_count_or_depth = 1,
+                                   .num_levels = 1,
+                                   .sample_count = BH_GPU_SAMPLECOUNT_1};
 
-    SDL_GPUTexture *tex = SDL_CreateGPUTexture(device, &tci);
+    BH_GPUTexture *tex = BH_GPU_CreateTexture(device, &tci);
     if (!tex)
     {
-        SDL_Log("[bh] SDL_CreateGPUTexture failed: %s", SDL_GetError());
+        SDL_Log("[bh] BH_GPU_CreateTexture failed: %s", BH_GPU_GetLastError());
         return NULL;
     }
 
     const uint32_t upload_bytes = pitch_bytes * h;
-    SDL_GPUTransferBufferCreateInfo tbci = {.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, .size = upload_bytes};
 
-    SDL_GPUTransferBuffer *tbuf = SDL_CreateGPUTransferBuffer(device, &tbci);
+    BH_GPUTransferBufferCreateInfo tbci = {.usage = BH_GPU_TRANSFERBUFFERUSAGE_UPLOAD, .size = upload_bytes};
+
+    BH_GPUTransferBuffer *tbuf = BH_GPU_CreateTransferBuffer(device, &tbci);
     if (!tbuf)
     {
-        SDL_Log("[bh] SDL_CreateGPUTransferBuffer failed: %s", SDL_GetError());
-        SDL_ReleaseGPUTexture(device, tex);
+        SDL_Log("[bh] BH_GPU_CreateTransferBuffer failed: %s", BH_GPU_GetLastError());
+        BH_GPU_ReleaseTexture(device, tex);
         return NULL;
     }
 
-    void *mapped = SDL_MapGPUTransferBuffer(device, tbuf, false);
+    void *mapped = BH_GPU_MapTransferBuffer(device, tbuf, false);
     if (!mapped)
     {
-        SDL_Log("[bh] SDL_MapGPUTransferBuffer failed: %s", SDL_GetError());
-        SDL_ReleaseGPUTransferBuffer(device, tbuf);
-        SDL_ReleaseGPUTexture(device, tex);
+        SDL_Log("[bh] BH_GPU_MapTransferBuffer failed: %s", BH_GPU_GetLastError());
+        BH_GPU_ReleaseTransferBuffer(device, tbuf);
+        BH_GPU_ReleaseTexture(device, tex);
         return NULL;
     }
 
     SDL_memcpy(mapped, pixels_rgba8, upload_bytes);
-    SDL_UnmapGPUTransferBuffer(device, tbuf);
+    BH_GPU_UnmapTransferBuffer(device, tbuf);
 
-    SDL_GPUCommandBuffer *cmd = SDL_AcquireGPUCommandBuffer(device);
+    BH_GPUCommandBuffer *cmd = BH_GPU_AcquireCommandBuffer(device);
     if (!cmd)
     {
-        SDL_Log("[bh] SDL_AcquireGPUCommandBuffer failed: %s", SDL_GetError());
-        SDL_ReleaseGPUTransferBuffer(device, tbuf);
-        SDL_ReleaseGPUTexture(device, tex);
+        SDL_Log("[bh] BH_GPU_AcquireCommandBuffer failed: %s", BH_GPU_GetLastError());
+        BH_GPU_ReleaseTransferBuffer(device, tbuf);
+        BH_GPU_ReleaseTexture(device, tex);
         return NULL;
     }
 
-    SDL_GPUCopyPass *copy = SDL_BeginGPUCopyPass(cmd);
+    BH_GPUCopyPass *copy = BH_GPU_BeginCopyPass(cmd);
     if (!copy)
     {
-        SDL_Log("[bh] SDL_BeginGPUCopyPass failed: %s", SDL_GetError());
-        SDL_CancelGPUCommandBuffer(cmd);
-        SDL_ReleaseGPUTransferBuffer(device, tbuf);
-        SDL_ReleaseGPUTexture(device, tex);
+        SDL_Log("[bh] BH_GPU_BeginCopyPass failed: %s", BH_GPU_GetLastError());
+        BH_GPU_CancelCommandBuffer(cmd);
+        BH_GPU_ReleaseTransferBuffer(device, tbuf);
+        BH_GPU_ReleaseTexture(device, tex);
         return NULL;
     }
 
-    SDL_GPUTextureTransferInfo src = {
+    BH_GPUTextureTransferInfo src = {
         .transfer_buffer = tbuf, .offset = 0, .pixels_per_row = pitch_bytes / 4u, .rows_per_layer = h};
 
-    SDL_GPUTextureRegion dst = {
+    BH_GPUTextureRegion dst = {
         .texture = tex, .mip_level = 0, .layer = 0, .x = 0, .y = 0, .z = 0, .w = w, .h = h, .d = 1};
 
-    SDL_UploadToGPUTexture(copy, &src, &dst, false);
-    SDL_EndGPUCopyPass(copy);
+    BH_GPU_UploadToTexture(copy, &src, &dst, false);
+    BH_GPU_EndCopyPass(copy);
 
-    if (!SDL_SubmitGPUCommandBuffer(cmd))
+    if (!BH_GPU_SubmitCommandBuffer(cmd))
     {
-        SDL_Log("[bh] SDL_SubmitGPUCommandBuffer failed: %s", SDL_GetError());
-        SDL_ReleaseGPUTransferBuffer(device, tbuf);
-        SDL_ReleaseGPUTexture(device, tex);
+        SDL_Log("[bh] bh_texture_manager.c BH_GPU_SubmitCommandBuffer failed: %s", BH_GPU_GetLastError());
+        BH_GPU_ReleaseTransferBuffer(device, tbuf);
+        BH_GPU_ReleaseTexture(device, tex);
         return NULL;
     }
 
-    SDL_ReleaseGPUTransferBuffer(device, tbuf);
+    BH_GPU_ReleaseTransferBuffer(device, tbuf);
     return tex;
 }
 
@@ -128,27 +129,27 @@ static BH_TextureHandle bh_texture_manager_alloc_slot(BH_TextureManager *tm)
     return 0;
 }
 
-static SDL_GPUTextureFormat bh_tex_format_for_semantic(BH_TextureSemantic semantic)
+static BH_GPUTextureFormat bh_tex_format_for_semantic(BH_TextureSemantic semantic)
 {
     if (semantic == BH_TEXTURE_SEMANTIC_ALBEDO)
     {
-        return SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB;
+        return BH_GPU_GetTextureFormat_R8G8B8A8_UNORM_SRGB();
     }
     /* HDR_LIGHTMAP should be UNORM (Linear), NOT sRGB */
     if (semantic == BH_TEXTURE_SEMANTIC_HDR_LIGHTMAP)
     {
-        return SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+        return BH_GPU_GetTextureFormat_R8G8B8A8_UNORM();
     }
-    return SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+    return BH_GPU_GetTextureFormat_R8G8B8A8_UNORM();
 }
 
 static BH_TextureHandle bh_create_solid_rgba8(BH_TextureManager *tm, const char *debug_name, uint8_t rgba[4], bool srgb)
 {
     SDL_assert(tm);
 
-    const SDL_GPUTextureFormat fmt =
-        srgb ? SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB : SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
-    SDL_GPUTexture *tex = bh_upload_rgba8_texture(tm->device, rgba, 1, 1, 4, fmt);
+    const BH_GPUTextureFormat fmt =
+        srgb ? BH_GPU_GetTextureFormat_R8G8B8A8_UNORM_SRGB() : BH_GPU_GetTextureFormat_R8G8B8A8_UNORM();
+    BH_GPUTexture *tex = bh_upload_rgba8_texture(tm->device, rgba, 1, 1, 4, fmt);
 
     if (!tex)
     {
@@ -158,7 +159,7 @@ static BH_TextureHandle bh_create_solid_rgba8(BH_TextureManager *tm, const char 
     BH_TextureHandle h = bh_texture_manager_alloc_slot(tm);
     if (h == 0)
     {
-        SDL_ReleaseGPUTexture(tm->device, tex);
+        BH_GPU_ReleaseTexture(tm->device, tex);
         return 0;
     }
 
@@ -185,7 +186,7 @@ static bool bh_slot_path_eq(const char *a, const char *b)
    Public API
    ----------------------------------------------------------------------------- */
 
-bool BH_TextureManager_Init(BH_TextureManager *tm, SDL_GPUDevice *device, BH_Arena *permanent_arena)
+bool BH_TextureManager_Init(BH_TextureManager *tm, BH_GPUDevice *device, BH_Arena *permanent_arena)
 {
     if (!tm || !device || !permanent_arena)
     {
@@ -194,23 +195,23 @@ bool BH_TextureManager_Init(BH_TextureManager *tm, SDL_GPUDevice *device, BH_Are
 
     *tm = (BH_TextureManager){.device = device, .arena = permanent_arena};
 
-    SDL_GPUSamplerCreateInfo sci = {.min_filter = SDL_GPU_FILTER_LINEAR,
-                                    .mag_filter = SDL_GPU_FILTER_LINEAR,
-                                    .mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST,
-                                    .address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
-                                    .address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
-                                    .address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
-                                    .min_lod = 0.0f,
-                                    .max_lod = 0.0f,
-                                    .mip_lod_bias = 0.0f,
-                                    .enable_anisotropy = false,
-                                    .max_anisotropy = 1.0f,
-                                    .compare_op = SDL_GPU_COMPAREOP_INVALID};
+    BH_GPUSamplerCreateInfo sci = {.min_filter = BH_GPU_FILTER_LINEAR,
+                                   .mag_filter = BH_GPU_FILTER_LINEAR,
+                                   .mipmap_mode = BH_GPU_SAMPLERMIPMAPMODE_NEAREST,
+                                   .address_mode_u = BH_GPU_SAMPLERADDRESSMODE_REPEAT,
+                                   .address_mode_v = BH_GPU_SAMPLERADDRESSMODE_REPEAT,
+                                   .address_mode_w = BH_GPU_SAMPLERADDRESSMODE_REPEAT,
+                                   .min_lod = 0.0f,
+                                   .max_lod = 0.0f,
+                                   .mip_lod_bias = 0.0f,
+                                   .enable_anisotropy = false,
+                                   .max_anisotropy = 1.0f,
+                                   .compare_op = BH_GPU_COMPAREOP_INVALID};
 
-    tm->sampler_linear_repeat = SDL_CreateGPUSampler(device, &sci);
+    tm->sampler_linear_repeat = BH_GPU_CreateSampler(device, &sci);
     if (!tm->sampler_linear_repeat)
     {
-        SDL_Log("[bh] SDL_CreateGPUSampler failed: %s", SDL_GetError());
+        SDL_Log("[bh] BH_GPU_CreateSampler failed: %s", BH_GPU_GetLastError());
         BH_TextureManager_Shutdown(tm);
         return false;
     }
@@ -245,7 +246,7 @@ void BH_TextureManager_Shutdown(BH_TextureManager *tm)
     {
         if (tm->sampler_linear_repeat)
         {
-            SDL_ReleaseGPUSampler(tm->device, tm->sampler_linear_repeat);
+            BH_GPU_ReleaseSampler(tm->device, tm->sampler_linear_repeat);
         }
 
         const uint32_t count = (uint32_t)(sizeof(tm->slots) / sizeof(tm->slots[0]));
@@ -254,7 +255,7 @@ void BH_TextureManager_Shutdown(BH_TextureManager *tm)
             struct BH_TextureSlot *s = &tm->slots[i];
             if (s->in_use && s->tex && s->owned)
             {
-                SDL_ReleaseGPUTexture(tm->device, s->tex);
+                BH_GPU_ReleaseTexture(tm->device, s->tex);
             }
         }
     }
@@ -262,7 +263,7 @@ void BH_TextureManager_Shutdown(BH_TextureManager *tm)
     *tm = (BH_TextureManager){0};
 }
 
-SDL_GPUSampler *BH_TextureManager_GetSampler(const BH_TextureManager *tm)
+BH_GPUSampler *BH_TextureManager_GetSampler(const BH_TextureManager *tm)
 {
     return tm ? tm->sampler_linear_repeat : NULL;
 }
@@ -308,8 +309,8 @@ BH_TextureHandle BH_TextureManager_LoadTexture(BH_TextureManager *tm, const char
     }
 
     const bool srgb = (semantic == BH_TEXTURE_SEMANTIC_ALBEDO);
-    SDL_GPUTexture *tex = bh_upload_rgba8_texture(tm->device, rgba->pixels, (uint32_t)rgba->w, (uint32_t)rgba->h,
-                                                  (uint32_t)rgba->pitch, bh_tex_format_for_semantic(semantic));
+    BH_GPUTexture *tex = bh_upload_rgba8_texture(tm->device, rgba->pixels, (uint32_t)rgba->w, (uint32_t)rgba->h,
+                                                 (uint32_t)rgba->pitch, bh_tex_format_for_semantic(semantic));
 
     BH_TextureHandle handle = 0;
     if (tex)
@@ -328,7 +329,7 @@ BH_TextureHandle BH_TextureManager_LoadTexture(BH_TextureManager *tm, const char
         else
         {
             SDL_Log("[bh] Texture slots full (cap=%u)", slot_cap);
-            SDL_ReleaseGPUTexture(tm->device, tex);
+            BH_GPU_ReleaseTexture(tm->device, tex);
         }
     }
 
@@ -382,8 +383,8 @@ BH_TextureHandle BH_TextureManager_LoadTextureFromMemory(BH_TextureManager *tm, 
     }
 
     const bool srgb = (semantic == BH_TEXTURE_SEMANTIC_ALBEDO);
-    SDL_GPUTexture *tex = bh_upload_rgba8_texture(tm->device, rgba->pixels, (uint32_t)rgba->w, (uint32_t)rgba->h,
-                                                  (uint32_t)rgba->pitch, bh_tex_format_for_semantic(semantic));
+    BH_GPUTexture *tex = bh_upload_rgba8_texture(tm->device, rgba->pixels, (uint32_t)rgba->w, (uint32_t)rgba->h,
+                                                 (uint32_t)rgba->pitch, bh_tex_format_for_semantic(semantic));
 
     BH_TextureHandle handle = 0;
     if (tex)
@@ -402,7 +403,7 @@ BH_TextureHandle BH_TextureManager_LoadTextureFromMemory(BH_TextureManager *tm, 
         else
         {
             SDL_Log("[bh] Texture slots full (cap=%u)", slot_cap);
-            SDL_ReleaseGPUTexture(tm->device, tex);
+            BH_GPU_ReleaseTexture(tm->device, tex);
         }
     }
 
@@ -411,7 +412,7 @@ BH_TextureHandle BH_TextureManager_LoadTextureFromMemory(BH_TextureManager *tm, 
 }
 
 BH_TextureHandle BH_TextureManager_RegisterExternalTexture(BH_TextureManager *tm, const char *debug_name,
-                                                           SDL_GPUTexture *tex, uint32_t w, uint32_t h, bool srgb,
+                                                           BH_GPUTexture *tex, uint32_t w, uint32_t h, bool srgb,
                                                            bool take_ownership)
 {
     if (!tm || !tm->device || !tm->arena || !debug_name || !debug_name[0] || !tex || w == 0 || h == 0)
@@ -486,14 +487,14 @@ void BH_TextureManager_ReleaseHandle(BH_TextureManager *tm, BH_TextureHandle han
 
     if (s->tex && s->owned)
     {
-        SDL_ReleaseGPUTexture(tm->device, s->tex);
+        BH_GPU_ReleaseTexture(tm->device, s->tex);
     }
 
     /* Clear slot (path memory remains in arena) */
     *s = (struct BH_TextureSlot){0};
 }
 
-SDL_GPUTexture *BH_TextureManager_GetGPUTexture(const BH_TextureManager *tm, BH_TextureHandle handle)
+BH_GPUTexture *BH_TextureManager_GetGPUTexture(const BH_TextureManager *tm, BH_TextureHandle handle)
 {
     if (!tm || !tm->device || handle == 0)
     {

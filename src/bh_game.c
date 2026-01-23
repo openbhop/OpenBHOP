@@ -127,7 +127,7 @@ static void bh_game_clear_level(BH_Game *game)
 {
     if (game->renderer.device)
     {
-        SDL_WaitForGPUIdle(game->renderer.device);
+        BH_GPU_WaitForIdle(game->renderer.device);
     }
 
     BH_Entity_DestroyAll(&game->scene, &game->entity_sv);
@@ -233,7 +233,23 @@ bool BH_Game_Init(BH_Game *game, const BH_GameConfig *cfg, const char *asset_roo
         return false;
     }
 
-    const SDL_WindowFlags wflags = SDL_WINDOW_RESIZABLE;
+    const bool use_gl = (SDL_strcasecmp(BH_GPU_GetBackend()->name, "OpenGL") == 0);
+
+    SDL_WindowFlags wflags = SDL_WINDOW_RESIZABLE;
+    if (use_gl)
+    {
+        // When using the OpenGL backend, SDL needs to create an OpenGL-capable
+        // window and we must request the GL context attributes up front.
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+        SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+
+        wflags |= SDL_WINDOW_OPENGL;
+    }
+
     game->window = SDL_CreateWindow(cfg->title, cfg->width, cfg->height, wflags);
     if (!game->window)
     {
@@ -288,7 +304,7 @@ bool BH_Game_Init(BH_Game *game, const BH_GameConfig *cfg, const char *asset_roo
 
     game->entity_sv = (BH_EntityServices){0};
     game->entity_sv.permanent_arena = &game->level_arena;
-    game->entity_sv.gpu_device = (struct SDL_GPUDevice *)game->renderer.device;
+    game->entity_sv.gpu_device = game->renderer.device;
     game->entity_sv.textures = &game->renderer.textures;
     game->entity_sv.materials = &game->renderer.materials;
     game->entity_sv.scene = &game->scene;
@@ -340,7 +356,7 @@ void BH_Game_Shutdown(BH_Game *game)
 
     if (game->renderer.device)
     {
-        SDL_WaitForGPUIdle(game->renderer.device);
+        BH_GPU_WaitForIdle(game->renderer.device);
         BH_Entity_DestroyAll(&game->scene, &game->entity_sv);
     }
 

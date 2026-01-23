@@ -60,7 +60,7 @@ extern "C"
 
     /* Returns 0 if no render target was set. */
     BH_TextureHandle BH_UIContext_GetRenderTargetHandle(const BH_UIContext *ctx);
-    SDL_GPUTexture *BH_UIContext_GetRenderTargetTexture(const BH_UIContext *ctx);
+    BH_GPUTexture *BH_UIContext_GetRenderTargetTexture(const BH_UIContext *ctx);
 
     /*
       Loads a document from an in-memory RML string and shows it.

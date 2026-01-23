@@ -6,8 +6,21 @@ cmake_minimum_required(VERSION 3.20)
 project(bh LANGUAGES C CXX)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_C_EXTENSIONS OFF)
+# Emscripten requires GNU extensions for EM_ASM macros in C code
+if(EMSCRIPTEN)
+    set(CMAKE_C_EXTENSIONS ON)
+else()
+    set(CMAKE_C_EXTENSIONS OFF)
+endif()
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+# ------------------------------------------------------------------------------
+# Web / Emscripten
+# ------------------------------------------------------------------------------
+set(BH_EMSCRIPTEN OFF)
+if(EMSCRIPTEN)
+    set(BH_EMSCRIPTEN ON)
+endif()
 
 # ------------------------------------------------------------------------------
 # 2. Dependencies (SDL3 & RmlUi)
@@ -18,6 +31,12 @@ set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
 set(SDL_TESTS        OFF CACHE BOOL "" FORCE)
 set(SDL_EXAMPLES     OFF CACHE BOOL "" FORCE)
 set(SDL_DISABLE_INSTALL ON CACHE BOOL "" FORCE)
+
+# Emscripten does not support dynamic linking in the traditional sense.
+if(BH_EMSCRIPTEN)
+    set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+    set(SDL_STATIC ON  CACHE BOOL "" FORCE)
+endif()
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/extern/sdl3/CMakeLists.txt")
     add_subdirectory(extern/sdl3)
@@ -36,6 +55,11 @@ set(RMLUI_SAMPLES OFF CACHE BOOL "" FORCE)
 set(RMLUI_TESTS   OFF CACHE BOOL "" FORCE)
 set(RMLUI_INSTALL OFF CACHE BOOL "" FORCE)
 
+if(BH_EMSCRIPTEN)
+    # RmlUi uses CMake's standard BUILD_SHARED_LIBS. Web builds should be static.
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+endif()
+
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/extern/interface/CMakeLists.txt")
     add_subdirectory(extern/interface)
     get_directory_property(RMLUI_TARGETS DIRECTORY extern/interface BUILDSYSTEM_TARGETS)
@@ -47,11 +71,21 @@ endif()
 # ------------------------------------------------------------------------------
 # 3. Internal Tools
 # ------------------------------------------------------------------------------
-add_executable(bh_spirv_reflect tools/bh_spirv_reflect.c)
-set_target_properties(bh_spirv_reflect PROPERTIES
-    FOLDER "Build Tools"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tools"
-)
+if(BH_EMSCRIPTEN)
+    # When cross-compiling we can't run a tool built with the target compiler.
+    # Use a small Python reflection helper instead.
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    set(BH_SPIRV_REFLECT_CMD ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/tools/bh_spirv_reflect.py")
+    set(BH_SPIRV_REFLECT_DEPS "${CMAKE_CURRENT_SOURCE_DIR}/tools/bh_spirv_reflect.py")
+else()
+    add_executable(bh_spirv_reflect tools/bh_spirv_reflect.c)
+    set_target_properties(bh_spirv_reflect PROPERTIES
+        FOLDER "Build Tools"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tools"
+    )
+    set(BH_SPIRV_REFLECT_CMD $<TARGET_FILE:bh_spirv_reflect>)
+    set(BH_SPIRV_REFLECT_DEPS bh_spirv_reflect)
+endif()
 
 # ------------------------------------------------------------------------------
 # 4. Shader Pipeline (deterministic + no regen churn)
@@ -82,10 +116,9 @@ function(add_hlsl_shader in_file profile entry)
         COMMAND "${DXC_EXECUTABLE}" ${DXC_COMMON_ARGS}
                 -T "${profile}" -E "${entry}" -spirv
                 -Fo "${spv}" "${in_file}"
-        COMMAND "$<TARGET_FILE:bh_spirv_reflect>" "${spv}" "${json}"
+        COMMAND ${BH_SPIRV_REFLECT_CMD} "${spv}" "${json}"
         MAIN_DEPENDENCY "${in_file}"
-        BYPRODUCTS "${spv}" "${json}"
-        DEPENDS $<TARGET_FILE:bh_spirv_reflect>
+        DEPENDS ${BH_SPIRV_REFLECT_DEPS}
         COMMENT "Compile+reflect ${in_file} -> ${spv_name}, ${json_name}"
         VERBATIM
     )
@@ -125,6 +158,13 @@ add_executable(bh ${BH_SOURCES})
 target_include_directories(bh PRIVATE "src" "extern/interface/Backends")
 target_link_libraries(bh PRIVATE SDL3::SDL3 rmlui_core)
 
+# Desktop OpenGL backend support (loaded at runtime via SDL_GL_GetProcAddress).
+# Emscripten builds use the SDL_gpu path and do not require system OpenGL.
+if(NOT BH_EMSCRIPTEN)
+    find_package(OpenGL REQUIRED)
+    target_link_libraries(bh PRIVATE OpenGL::GL)
+endif()
+
 get_property(BH_SHADER_PRODUCTS GLOBAL PROPERTY BH_SHADER_PRODUCTS)
 set_source_files_properties(${BH_SHADER_PRODUCTS} PROPERTIES GENERATED TRUE)
 target_sources(bh PRIVATE ${BH_SHADER_PRODUCTS})
@@ -137,9 +177,33 @@ else()
 endif()
 
 # ------------------------------------------------------------------------------
+# 5b. Emscripten output (index.html + asset packaging)
+# ------------------------------------------------------------------------------
+if(BH_EMSCRIPTEN)
+    # Have emcc emit index.html as the primary output.
+    set_target_properties(bh PROPERTIES OUTPUT_NAME "index" SUFFIX ".html")
+
+    # Enable the virtual filesystem and package assets into it.
+    # Assets are preloaded to /assets to match BH_App's asset_root on the web.
+    target_link_options(bh PRIVATE
+        "SHELL:-sFORCE_FILESYSTEM=1"
+        "SHELL:-sALLOW_MEMORY_GROWTH=1"
+		"SHELL:-sMAX_WEBGL_VERSION=2"
+        "SHELL:-sMIN_WEBGL_VERSION=2"
+		"SHELL:-sSTACK_SIZE=2097152"
+
+        "SHELL:--shell-file ${CMAKE_CURRENT_SOURCE_DIR}/web/shell.html"
+        "SHELL:--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/assets@/assets"
+        "SHELL:--preload-file ${SHADER_OUT_DIR}@/assets/shaders/compiled"
+    )
+endif()
+
+# ------------------------------------------------------------------------------
 # 6. Post-Build: Copy runtime DLLs & assets (pure post-link step)
 # ------------------------------------------------------------------------------
-if (WIN32)
+if(BH_EMSCRIPTEN)
+    # Web builds preload assets via emcc link options above.
+elseif (WIN32)
     add_custom_command(TARGET bh POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:SDL3::SDL3> $<TARGET_FILE_DIR:bh>
         COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:rmlui_core> $<TARGET_FILE_DIR:bh>
@@ -151,6 +215,18 @@ if (WIN32)
                 "${SHADER_OUT_DIR}"
                 "$<TARGET_FILE_DIR:bh>/assets/shaders/compiled"
         COMMENT "Copying DLLs, assets, and compiled shaders..."
+    )
+else()
+    # On non-Windows desktop platforms, ensure assets (including OpenGL GLSL)
+    # and compiled shader reflections are copied next to the executable.
+    add_custom_command(TARGET bh POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+                "$<TARGET_FILE_DIR:bh>/assets"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${SHADER_OUT_DIR}"
+                "$<TARGET_FILE_DIR:bh>/assets/shaders/compiled"
+        COMMENT "Copying assets and compiled shaders..."
     )
 endif()
 
@@ -165,3 +241,4 @@ source_group(TREE "${SHADER_SRC_DIR}" PREFIX "Shaders" FILES ${ALL_SHADER_SOURCE
 target_sources(bh PRIVATE ${ALL_SHADER_SOURCES})
 set_source_files_properties(${ALL_SHADER_SOURCES}
     PROPERTIES HEADER_FILE_ONLY TRUE VS_TOOL_OVERRIDE "Text")
+

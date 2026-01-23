@@ -6,6 +6,7 @@
 
 #include "../math/bh_color.h"
 #include "../math/bh_math.h"
+#include "../render/bh_gpu.h"
 #include "../render/bh_shader_program.h"
 
 typedef struct BH_Renderer BH_Renderer;
@@ -61,17 +62,17 @@ extern "C"
 
     typedef struct BH_DebugDraw
     {
-        SDL_GPUDevice *device;
+        BH_GPUDevice *device;
 
         BH_ShaderProgram line_depth;
         BH_ShaderProgram line_always;
         BH_ShaderProgram tri_depth;
         BH_ShaderProgram tri_always;
 
-        SDL_GPUBuffer *vb_line_depth;
-        SDL_GPUBuffer *vb_line_always;
-        SDL_GPUBuffer *vb_tri_depth;
-        SDL_GPUBuffer *vb_tri_always;
+        BH_GPUBuffer *vb_line_depth;
+        BH_GPUBuffer *vb_line_always;
+        BH_GPUBuffer *vb_tri_depth;
+        BH_GPUBuffer *vb_tri_always;
 
         uint32_t vb_line_depth_bytes;
         uint32_t vb_line_always_bytes;
@@ -107,7 +108,7 @@ extern "C"
         BH_DbgState state_stack[16];
         uint32_t state_top;
 
-        SDL_GPUTransferBuffer **pending_tbufs;
+        BH_GPUTransferBuffer **pending_tbufs;
         uint32_t pending_tbuf_count;
         uint32_t pending_tbuf_cap;
 

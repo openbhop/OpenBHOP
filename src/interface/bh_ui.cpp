@@ -14,13 +14,13 @@
 #include <RmlUi/Core/Vertex.h>
 
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_gpu.h>
 
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <new>
 #include <string>
@@ -258,62 +258,87 @@ class BH_RmlFileInterface final : public Rml::FileInterface
 };
 
 // -----------------------------
-//  SDL_GPU Render backend
+//  BH_GPU Render backend (backend-agnostic)
 // -----------------------------
 
-static SDL_GPUShader *bh_create_shader_from_memory(SDL_GPUDevice *device, SDL_GPUShaderStage stage,
-                                                   const void *code_spirv, size_t code_spirv_bytes,
-                                                   const void *code_msl, size_t code_msl_bytes, const void *code_dxil,
-                                                   size_t code_dxil_bytes, uint32_t num_samplers,
-                                                   uint32_t num_storage_textures, uint32_t num_storage_buffers,
-                                                   uint32_t num_uniform_buffers)
+/*
+    For the SDL3 backend, we re-use the precompiled SPIR-V shaders from the upstream
+    RmlUi SDL_GPU renderer (ShadersCompiledSPV.h).
+
+    For the OpenGL backend, BH_GPU currently only supports GLSL sources, so we provide
+    minimal GLSL equivalents for the UI shaders here.
+*/
+static const char *g_rml_glsl_vert = R"(#version 300 es
+
+// Attributes matching glBindAttribLocation in backend
+in vec2 a_Position;
+in vec4 a_Normal; // Color
+in vec2 a_UV;
+
+// We MUST keep std140 blocks here because bh_gpu_gl.c uses 
+// glBufferSubData to upload to these slots.
+layout(std140) uniform VS_UBO0
 {
-    const SDL_GPUShaderFormat formats = SDL_GetGPUShaderFormats(device);
+    mat4 Transform;
+};
 
-    SDL_GPUShaderCreateInfo ci{};
-    ci.stage = stage;
-    ci.entrypoint = "main";
-    ci.num_samplers = num_samplers;
-    ci.num_storage_textures = num_storage_textures;
-    ci.num_storage_buffers = num_storage_buffers;
-    ci.num_uniform_buffers = num_uniform_buffers;
+layout(std140) uniform VS_UBO1
+{
+    vec2 Translate;
+    vec2 _Pad0; // Padding matches C-side structure alignment
+};
 
-    if ((formats & SDL_GPU_SHADERFORMAT_SPIRV) && code_spirv && code_spirv_bytes)
-    {
-        ci.format = SDL_GPU_SHADERFORMAT_SPIRV;
-        ci.code = static_cast<const Uint8 *>(code_spirv);
-        ci.code_size = code_spirv_bytes;
-        return SDL_CreateGPUShader(device, &ci);
-    }
+out vec4 v_Color;
+out vec2 v_TexCoord;
 
-    if ((formats & SDL_GPU_SHADERFORMAT_MSL) && code_msl && code_msl_bytes)
-    {
-        ci.format = SDL_GPU_SHADERFORMAT_MSL;
-        ci.code = static_cast<const Uint8 *>(code_msl);
-        ci.code_size = code_msl_bytes;
-        return SDL_CreateGPUShader(device, &ci);
-    }
+void main()
+{
+    v_TexCoord = a_UV;
+    v_Color = a_Normal;
 
-    if ((formats & SDL_GPU_SHADERFORMAT_DXIL) && code_dxil && code_dxil_bytes)
-    {
-        ci.format = SDL_GPU_SHADERFORMAT_DXIL;
-        ci.code = static_cast<const Uint8 *>(code_dxil);
-        ci.code_size = code_dxil_bytes;
-        return SDL_CreateGPUShader(device, &ci);
-    }
-
-    SDL_Log("[bh][rml] No supported shader format for UI shaders");
-    return nullptr;
+    // RmlUi 2D geometry is flat (Z=0).
+    vec4 position = vec4(a_Position + Translate, 0.0, 1.0);
+    gl_Position = Transform * position;
 }
+)";
+
+static const char *g_rml_glsl_frag_color = R"(#version 300 es
+precision mediump float;
+
+in vec4 v_Color;
+out vec4 o_Color;
+
+void main()
+{
+    o_Color = v_Color;
+}
+)";
+
+static const char *g_rml_glsl_frag_texture = R"(#version 300 es
+precision mediump float;
+
+in vec4 v_Color;
+in vec2 v_TexCoord;
+
+// bh_gpu_gl.c binds samplers to units 0-7, so this array is correct.
+uniform sampler2D u_Tex[8];
+
+out vec4 o_Color;
+
+void main()
+{
+    o_Color = v_Color * texture(u_Tex[0], v_TexCoord);
+}
+)";
 
 struct BH_RmlBuffer
 {
-    SDL_GPUBufferUsageFlags usage{};
+    uint32_t usage = 0;
     int capacity = 0; // bytes
     bool in_use = false;
 
-    SDL_GPUTransferBuffer *transfer = nullptr;
-    SDL_GPUBuffer *buffer = nullptr;
+    BH_GPUTransferBuffer *transfer = nullptr;
+    BH_GPUBuffer *buffer = nullptr;
 };
 
 struct BH_RmlGeometry
@@ -326,7 +351,7 @@ struct BH_RmlGeometry
 struct BH_RmlCommand
 {
     virtual ~BH_RmlCommand() = default;
-    virtual void Execute(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) = 0;
+    virtual void Execute(BH_GPUCommandBuffer *cmd, BH_GPURenderPass *pass) = 0;
 };
 
 class BH_RmlRenderBackend
@@ -336,8 +361,10 @@ class BH_RmlRenderBackend
     {
         device_ = renderer ? renderer->device : nullptr;
         window_ = renderer ? renderer->window : nullptr;
-        color_format_ = renderer ? renderer->swapchain_format : SDL_GPU_TEXTUREFORMAT_INVALID;
-        depth_format_ = renderer ? renderer->depth_format : SDL_GPU_TEXTUREFORMAT_INVALID;
+        color_format_ = renderer ? renderer->swapchain_format : (BH_GPUTextureFormat)0;
+        depth_format_ = renderer ? renderer->depth_format : (BH_GPUTextureFormat)0;
+
+        use_gl_ = (SDL_strcasecmp(BH_GPU_GetBackend()->name, "OpenGL") == 0);
 
         if (device_)
         {
@@ -350,7 +377,7 @@ class BH_RmlRenderBackend
         DestroyDeviceObjects();
     }
 
-    void SetPreparePass(SDL_GPUCommandBuffer *cmd, SDL_GPUCopyPass *copy_pass, uint32_t fb_w, uint32_t fb_h)
+    void SetPreparePass(BH_GPUCommandBuffer *cmd, BH_GPUCopyPass *copy_pass, uint32_t fb_w, uint32_t fb_h)
     {
         cmd_prepare_ = cmd;
         copy_pass_ = copy_pass;
@@ -364,36 +391,28 @@ class BH_RmlRenderBackend
         // Reset per-frame render state.
         transform_ = projection_;
         scissor_enabled_ = false;
-        scissor_rect_ = {0, 0, int(fb_w), int(fb_h)};
+        scissor_rect_ = {0, 0, int32_t(fb_w), int32_t(fb_h)};
 
         draw_commands_.clear();
     }
 
-    void RenderToPass(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass)
+    void RenderToPass(BH_GPUCommandBuffer *cmd, BH_GPURenderPass *pass)
     {
         if (!device_ || !pass)
             return;
 
         // Bind a full-screen viewport.
-        SDL_GPUViewport viewport{};
-        viewport.x = 0;
-        viewport.y = 0;
-        viewport.w = float(fb_w_);
-        viewport.h = float(fb_h_);
-        viewport.min_depth = 0.f;
-        viewport.max_depth = 1.f;
-        SDL_SetGPUViewport(pass, &viewport);
+        const BH_GPUViewport viewport{0.0f, 0.0f, float(fb_w_), float(fb_h_), 0.0f, 1.0f};
+        BH_GPU_SetViewport(pass, &viewport);
 
-        // Ensure scissor is initialized.
-        SDL_SetGPUScissor(pass, &scissor_rect_);
+        // Ensure scissor is set.
+        BH_GPU_SetScissor(pass, &scissor_rect_);
 
-        // Execute recorded UI commands.
-        for (const std::unique_ptr<BH_RmlCommand> &cmd_it : draw_commands_)
+        // Execute recorded draw commands.
+        for (auto &c : draw_commands_)
         {
-            cmd_it->Execute(cmd, pass);
+            c->Execute(cmd, pass);
         }
-
-        draw_commands_.clear();
     }
 
     void EndFrame(bool /*submit_ok*/)
@@ -422,28 +441,28 @@ class BH_RmlRenderBackend
         const int vertex_bytes = int(vertices.size()) * int(sizeof(Rml::Vertex));
         const int index_bytes = int(indices.size()) * int(sizeof(int));
 
-        BH_RmlBuffer *vb = AcquireBuffer(vertex_bytes, SDL_GPU_BUFFERUSAGE_VERTEX);
-        BH_RmlBuffer *ib = AcquireBuffer(index_bytes, SDL_GPU_BUFFERUSAGE_INDEX);
+        BH_RmlBuffer *vb = AcquireBuffer(vertex_bytes, BH_GPU_BUFFERUSAGE_VERTEX | BH_GPU_BUFFERUSAGE_DYNAMIC);
+        BH_RmlBuffer *ib = AcquireBuffer(index_bytes, BH_GPU_BUFFERUSAGE_INDEX | BH_GPU_BUFFERUSAGE_DYNAMIC);
 
         if (!vb || !ib)
             return 0;
 
         // Upload via current copy pass if present, otherwise do an immediate one-off submit.
-        SDL_GPUCommandBuffer *upload_cmd = cmd_prepare_;
-        SDL_GPUCopyPass *upload_copy = copy_pass_;
+        BH_GPUCommandBuffer *upload_cmd = cmd_prepare_;
+        BH_GPUCopyPass *upload_copy = copy_pass_;
 
-        SDL_GPUCommandBuffer *temp_cmd = nullptr;
-        SDL_GPUCopyPass *temp_copy = nullptr;
+        BH_GPUCommandBuffer *temp_cmd = nullptr;
+        BH_GPUCopyPass *temp_copy = nullptr;
 
         if (!upload_cmd || !upload_copy)
         {
-            temp_cmd = SDL_AcquireGPUCommandBuffer(device_);
+            temp_cmd = BH_GPU_AcquireCommandBuffer(device_);
             if (!temp_cmd)
                 return 0;
-            temp_copy = SDL_BeginGPUCopyPass(temp_cmd);
+            temp_copy = BH_GPU_BeginCopyPass(temp_cmd);
             if (!temp_copy)
             {
-                SDL_CancelGPUCommandBuffer(temp_cmd);
+                BH_GPU_CancelCommandBuffer(temp_cmd);
                 return 0;
             }
             upload_cmd = temp_cmd;
@@ -452,64 +471,73 @@ class BH_RmlRenderBackend
 
         // Vertex data
         {
-            void *mapped = SDL_MapGPUTransferBuffer(device_, vb->transfer, false);
+            void *mapped = BH_GPU_MapTransferBuffer(device_, vb->transfer, false);
             if (!mapped)
             {
                 if (temp_copy)
-                    SDL_EndGPUCopyPass(temp_copy);
+                    BH_GPU_EndCopyPass(temp_copy);
                 if (temp_cmd)
-                    SDL_CancelGPUCommandBuffer(temp_cmd);
+                    BH_GPU_CancelCommandBuffer(temp_cmd);
                 return 0;
             }
 
             std::memcpy(mapped, vertices.data(), size_t(vertex_bytes));
-            SDL_UnmapGPUTransferBuffer(device_, vb->transfer);
+            BH_GPU_UnmapTransferBuffer(device_, vb->transfer);
 
-            SDL_GPUTransferBufferLocation src{};
+            BH_GPUTransferBufferLocation src{};
             src.transfer_buffer = vb->transfer;
             src.offset = 0;
 
-            SDL_GPUBufferRegion dst{};
+            BH_GPUBufferRegion dst{};
             dst.buffer = vb->buffer;
             dst.offset = 0;
-            dst.size = Uint32(vertex_bytes);
+            dst.size = uint32_t(vertex_bytes);
 
-            SDL_UploadToGPUBuffer(upload_copy, &src, &dst, false);
+            BH_GPU_UploadToBuffer(upload_copy, &src, &dst, false);
         }
 
         // Index data
         {
-            void *mapped = SDL_MapGPUTransferBuffer(device_, ib->transfer, false);
+            void *mapped = BH_GPU_MapTransferBuffer(device_, ib->transfer, false);
             if (!mapped)
             {
                 if (temp_copy)
-                    SDL_EndGPUCopyPass(temp_copy);
+                    BH_GPU_EndCopyPass(temp_copy);
                 if (temp_cmd)
-                    SDL_CancelGPUCommandBuffer(temp_cmd);
+                    BH_GPU_CancelCommandBuffer(temp_cmd);
                 return 0;
             }
 
             std::memcpy(mapped, indices.data(), size_t(index_bytes));
-            SDL_UnmapGPUTransferBuffer(device_, ib->transfer);
+            BH_GPU_UnmapTransferBuffer(device_, ib->transfer);
 
-            SDL_GPUTransferBufferLocation src{};
+            BH_GPUTransferBufferLocation src{};
             src.transfer_buffer = ib->transfer;
             src.offset = 0;
 
-            SDL_GPUBufferRegion dst{};
+            BH_GPUBufferRegion dst{};
             dst.buffer = ib->buffer;
             dst.offset = 0;
-            dst.size = Uint32(index_bytes);
+            dst.size = uint32_t(index_bytes);
 
-            SDL_UploadToGPUBuffer(upload_copy, &src, &dst, false);
+            BH_GPU_UploadToBuffer(upload_copy, &src, &dst, false);
         }
 
         if (temp_copy)
         {
-            SDL_EndGPUCopyPass(temp_copy);
-            SDL_GPUFence *fence = SDL_SubmitGPUCommandBufferAndAcquireFence(temp_cmd);
-            SDL_WaitForGPUFences(device_, true, &fence, 1);
-            SDL_ReleaseGPUFence(device_, fence);
+            BH_GPU_EndCopyPass(temp_copy);
+            const bool ok = BH_GPU_SubmitCommandBuffer(temp_cmd);
+            if (ok)
+            {
+                BH_GPU_WaitForIdle(device_);
+            }
+            else
+            {
+                // Upload failed; mark buffers reusable.
+                vb->in_use = false;
+                ib->in_use = false;
+                return 0;
+            }
         }
 
         auto *geom = new BH_RmlGeometry;
@@ -534,9 +562,9 @@ class BH_RmlRenderBackend
             BH_RmlRenderBackend *backend = nullptr;
             BH_RmlGeometry *geom = nullptr;
             Rml::Vector2f translation{};
-            SDL_GPUTexture *texture = nullptr;
+            BH_GPUTexture *texture = nullptr;
 
-            void Execute(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) override
+            void Execute(BH_GPUCommandBuffer *cmd, BH_GPURenderPass *pass) override
             {
                 backend->DrawGeometry(cmd, pass, geom, translation, texture);
             }
@@ -546,7 +574,7 @@ class BH_RmlRenderBackend
         cmd->backend = this;
         cmd->geom = geom;
         cmd->translation = translation;
-        cmd->texture = reinterpret_cast<SDL_GPUTexture *>(texture);
+        cmd->texture = reinterpret_cast<BH_GPUTexture *>(texture);
         draw_commands_.push_back(std::move(cmd));
     }
 
@@ -583,17 +611,17 @@ class BH_RmlRenderBackend
             return false;
         }
 
-        SDL_GPUTextureCreateInfo tex_ci{};
-        tex_ci.type = SDL_GPU_TEXTURETYPE_2D;
-        tex_ci.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
-        tex_ci.width = Uint32(dimensions.x);
-        tex_ci.height = Uint32(dimensions.y);
+        BH_GPUTextureCreateInfo tex_ci{};
+        tex_ci.type = BH_GPU_TEXTURETYPE_2D;
+        tex_ci.format = BH_GPU_GetTextureFormat_R8G8B8A8_UNORM();
+        tex_ci.width = uint32_t(dimensions.x);
+        tex_ci.height = uint32_t(dimensions.y);
         tex_ci.layer_count_or_depth = 1;
         tex_ci.num_levels = 1;
-        tex_ci.sample_count = SDL_GPU_SAMPLECOUNT_1;
-        tex_ci.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER;
+        tex_ci.sample_count = BH_GPU_SAMPLECOUNT_1;
+        tex_ci.usage = BH_GPU_TEXTUREUSAGE_SAMPLER;
 
-        SDL_GPUTexture *texture = SDL_CreateGPUTexture(device_, &tex_ci);
+        BH_GPUTexture *texture = BH_GPU_CreateTexture(device_, &tex_ci);
         if (!texture)
         {
             texture_handle = 0;
@@ -603,45 +631,46 @@ class BH_RmlRenderBackend
         const int pitch = dimensions.x * 4;
         const int upload_bytes = pitch * dimensions.y;
 
-        auto do_upload = [&](SDL_GPUCommandBuffer *cmd, SDL_GPUCopyPass *copy) {
-            SDL_GPUTransferBufferCreateInfo tci{};
-            tci.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-            tci.size = Uint32(upload_bytes);
+        auto do_upload = [&](BH_GPUCommandBuffer * /*cmd*/, BH_GPUCopyPass *copy) {
+            BH_GPUTransferBufferCreateInfo tci{};
+            tci.usage = BH_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+            tci.size = uint32_t(upload_bytes);
 
-            SDL_GPUTransferBuffer *tbuf = SDL_CreateGPUTransferBuffer(device_, &tci);
+            BH_GPUTransferBuffer *tbuf = BH_GPU_CreateTransferBuffer(device_, &tci);
             if (!tbuf)
                 return false;
 
-            void *mapped = SDL_MapGPUTransferBuffer(device_, tbuf, false);
+            void *mapped = BH_GPU_MapTransferBuffer(device_, tbuf, false);
             if (!mapped)
             {
-                SDL_ReleaseGPUTransferBuffer(device_, tbuf);
+                BH_GPU_ReleaseTransferBuffer(device_, tbuf);
                 return false;
             }
 
             std::memcpy(mapped, source, size_t(upload_bytes));
-            SDL_UnmapGPUTransferBuffer(device_, tbuf);
+            BH_GPU_UnmapTransferBuffer(device_, tbuf);
 
-            SDL_GPUTextureTransferInfo src_info{};
+            BH_GPUTextureTransferInfo src_info{};
             src_info.transfer_buffer = tbuf;
             src_info.offset = 0;
             // RmlUi textures are tightly packed, so pixels_per_row is just the width.
-            src_info.pixels_per_row = Uint32(dimensions.x);
-            src_info.rows_per_layer = Uint32(dimensions.y);
+            src_info.pixels_per_row = uint32_t(dimensions.x);
+            src_info.rows_per_layer = uint32_t(dimensions.y);
 
-            SDL_GPUTextureRegion dst_region{};
+            BH_GPUTextureRegion dst_region{};
             dst_region.texture = texture;
+            dst_region.mip_level = 0;
+            dst_region.layer = 0;
             dst_region.x = 0;
             dst_region.y = 0;
-            dst_region.w = Uint32(dimensions.x);
-            dst_region.h = Uint32(dimensions.y);
+            dst_region.z = 0;
+            dst_region.w = uint32_t(dimensions.x);
+            dst_region.h = uint32_t(dimensions.y);
             dst_region.d = 1;
 
-            // Pass &src_info instead of &src_loc
-            SDL_UploadToGPUTexture(copy, &src_info, &dst_region, false);
+            BH_GPU_UploadToTexture(copy, &src_info, &dst_region, false);
 
-            SDL_ReleaseGPUTransferBuffer(device_, tbuf);
-            (void)cmd;
+            BH_GPU_ReleaseTransferBuffer(device_, tbuf);
             return true;
         };
 
@@ -649,42 +678,50 @@ class BH_RmlRenderBackend
         {
             if (!do_upload(cmd_prepare_, copy_pass_))
             {
-                SDL_ReleaseGPUTexture(device_, texture);
+                BH_GPU_ReleaseTexture(device_, texture);
                 texture_handle = 0;
                 return false;
             }
         }
         else
         {
-            SDL_GPUCommandBuffer *cmd = SDL_AcquireGPUCommandBuffer(device_);
+            BH_GPUCommandBuffer *cmd = BH_GPU_AcquireCommandBuffer(device_);
             if (!cmd)
             {
-                SDL_ReleaseGPUTexture(device_, texture);
+                BH_GPU_ReleaseTexture(device_, texture);
                 texture_handle = 0;
                 return false;
             }
-            SDL_GPUCopyPass *copy = SDL_BeginGPUCopyPass(cmd);
+            BH_GPUCopyPass *copy = BH_GPU_BeginCopyPass(cmd);
             if (!copy)
             {
-                SDL_CancelGPUCommandBuffer(cmd);
-                SDL_ReleaseGPUTexture(device_, texture);
+                BH_GPU_CancelCommandBuffer(cmd);
+                BH_GPU_ReleaseTexture(device_, texture);
                 texture_handle = 0;
                 return false;
             }
 
             const bool ok = do_upload(cmd, copy);
-            SDL_EndGPUCopyPass(copy);
+            BH_GPU_EndCopyPass(copy);
             if (!ok)
             {
-                SDL_CancelGPUCommandBuffer(cmd);
-                SDL_ReleaseGPUTexture(device_, texture);
+                BH_GPU_CancelCommandBuffer(cmd);
+                BH_GPU_ReleaseTexture(device_, texture);
                 texture_handle = 0;
                 return false;
             }
 
-            SDL_GPUFence *fence = SDL_SubmitGPUCommandBufferAndAcquireFence(cmd);
-            SDL_WaitForGPUFences(device_, true, &fence, 1);
-            SDL_ReleaseGPUFence(device_, fence);
+            const bool submit_ok = BH_GPU_SubmitCommandBuffer(cmd);
+            if (submit_ok)
+            {
+                BH_GPU_WaitForIdle(device_);
+            }
+            else
+            {
+                BH_GPU_ReleaseTexture(device_, texture);
+                texture_handle = 0;
+                return false;
+            }
         }
 
         texture_handle = reinterpret_cast<Rml::TextureHandle>(texture);
@@ -693,11 +730,11 @@ class BH_RmlRenderBackend
 
     void ReleaseTexture(Rml::TextureHandle texture)
     {
-        SDL_GPUTexture *tex = reinterpret_cast<SDL_GPUTexture *>(texture);
+        BH_GPUTexture *tex = reinterpret_cast<BH_GPUTexture *>(texture);
         if (!tex)
             return;
 
-        pending_end_frame_.push_back([this, tex]() { SDL_ReleaseGPUTexture(device_, tex); });
+        pending_end_frame_.push_back([this, tex]() { BH_GPU_ReleaseTexture(device_, tex); });
     }
 
     void EnableScissorRegion(bool enable)
@@ -706,14 +743,14 @@ class BH_RmlRenderBackend
         {
             BH_RmlRenderBackend *backend = nullptr;
             bool enable = false;
-            void Execute(SDL_GPUCommandBuffer * /*cmd*/, SDL_GPURenderPass *pass) override
+            void Execute(BH_GPUCommandBuffer * /*cmd*/, BH_GPURenderPass *pass) override
             {
                 backend->scissor_enabled_ = enable;
                 if (!backend->scissor_enabled_)
                 {
-                    backend->scissor_rect_ = {0, 0, int(backend->fb_w_), int(backend->fb_h_)};
+                    backend->scissor_rect_ = {0, 0, int32_t(backend->fb_w_), int32_t(backend->fb_h_)};
                 }
-                SDL_SetGPUScissor(pass, &backend->scissor_rect_);
+                BH_GPU_SetScissor(pass, &backend->scissor_rect_);
             }
         };
 
@@ -728,17 +765,30 @@ class BH_RmlRenderBackend
         struct Cmd final : BH_RmlCommand
         {
             BH_RmlRenderBackend *backend = nullptr;
-            SDL_Rect rect{};
-            void Execute(SDL_GPUCommandBuffer * /*cmd*/, SDL_GPURenderPass *pass) override
+            BH_GPU_Rect rect{};
+            void Execute(BH_GPUCommandBuffer * /*cmd*/, BH_GPURenderPass *pass) override
             {
                 backend->scissor_rect_ = rect;
-                SDL_SetGPUScissor(pass, &backend->scissor_rect_);
+                BH_GPU_SetScissor(pass, &backend->scissor_rect_);
             }
         };
 
         std::unique_ptr<Cmd> cmd = std::make_unique<Cmd>();
         cmd->backend = this;
-        cmd->rect = {region.Left(), region.Top(), region.Width(), region.Height()};
+
+        BH_GPU_Rect r{};
+        r.x = region.Left();
+        r.y = region.Top();
+        r.w = region.Width();
+        r.h = region.Height();
+
+        // RmlUi uses a top-left origin. OpenGL scissor uses bottom-left.
+        if (use_gl_)
+        {
+            r.y = int32_t(fb_h_) - (r.y + r.h);
+        }
+
+        cmd->rect = r;
         draw_commands_.push_back(std::move(cmd));
     }
 
@@ -748,7 +798,7 @@ class BH_RmlRenderBackend
         {
             BH_RmlRenderBackend *backend = nullptr;
             Rml::Matrix4f transform{};
-            void Execute(SDL_GPUCommandBuffer * /*cmd*/, SDL_GPURenderPass * /*pass*/) override
+            void Execute(BH_GPUCommandBuffer * /*cmd*/, BH_GPURenderPass * /*pass*/) override
             {
                 backend->transform_ = backend->projection_ * transform;
             }
@@ -766,105 +816,143 @@ class BH_RmlRenderBackend
         if (!device_)
             return;
 
-        SDL_GPUSamplerCreateInfo sampler_info = {};
-        sampler_info.min_filter = SDL_GPU_FILTER_NEAREST;
-        sampler_info.mag_filter = SDL_GPU_FILTER_NEAREST;
-        sampler_info.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST;
-        sampler_info.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
-        sampler_info.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
-        sampler_info.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+        BH_GPUSamplerCreateInfo sampler_info{};
+        sampler_info.min_filter = BH_GPU_FILTER_NEAREST;
+        sampler_info.mag_filter = BH_GPU_FILTER_NEAREST;
+        sampler_info.mipmap_mode = BH_GPU_SAMPLERMIPMAPMODE_NEAREST;
+        sampler_info.address_mode_u = BH_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+        sampler_info.address_mode_v = BH_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+        sampler_info.address_mode_w = BH_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
 
-        sampler_linear_ = SDL_CreateGPUSampler(device_, &sampler_info);
+        sampler_linear_ = BH_GPU_CreateSampler(device_, &sampler_info);
 
-        vertex_shader_ = bh_create_shader_from_memory(
-            device_, SDL_GPU_SHADERSTAGE_VERTEX, shader_vert_spirv, sizeof(shader_vert_spirv), shader_vert_msl,
-            sizeof(shader_vert_msl), shader_vert_dxil, sizeof(shader_vert_dxil), 0, 0, 0, 2);
+        BH_GPUShaderCreateInfo vs_ci{};
+        vs_ci.entrypoint = "main";
+        vs_ci.stage = BH_GPU_SHADERSTAGE_VERTEX;
+        vs_ci.num_uniform_buffers = 2;
 
-        fragment_color_shader_ = bh_create_shader_from_memory(
-            device_, SDL_GPU_SHADERSTAGE_FRAGMENT, shader_frag_color_spirv, sizeof(shader_frag_color_spirv),
-            shader_frag_color_msl, sizeof(shader_frag_color_msl), shader_frag_color_dxil,
-            sizeof(shader_frag_color_dxil), 0, 0, 0, 0);
+        BH_GPUShaderCreateInfo fs_color_ci{};
+        fs_color_ci.entrypoint = "main";
+        fs_color_ci.stage = BH_GPU_SHADERSTAGE_FRAGMENT;
 
-        fragment_texture_shader_ = bh_create_shader_from_memory(
-            device_, SDL_GPU_SHADERSTAGE_FRAGMENT, shader_frag_texture_spirv, sizeof(shader_frag_texture_spirv),
-            shader_frag_texture_msl, sizeof(shader_frag_texture_msl), shader_frag_texture_dxil,
-            sizeof(shader_frag_texture_dxil), 1, 0, 0, 0);
+        BH_GPUShaderCreateInfo fs_tex_ci{};
+        fs_tex_ci.entrypoint = "main";
+        fs_tex_ci.stage = BH_GPU_SHADERSTAGE_FRAGMENT;
+        fs_tex_ci.num_samplers = 1;
+
+        if (use_gl_)
+        {
+            vs_ci.code = g_rml_glsl_vert;
+            vs_ci.code_size = (uint32_t)SDL_strlen(g_rml_glsl_vert);
+            vs_ci.format = BH_GPU_SHADERFORMAT_GLSL;
+
+            fs_color_ci.code = g_rml_glsl_frag_color;
+            fs_color_ci.code_size = (uint32_t)SDL_strlen(g_rml_glsl_frag_color);
+            fs_color_ci.format = BH_GPU_SHADERFORMAT_GLSL;
+
+            fs_tex_ci.code = g_rml_glsl_frag_texture;
+            fs_tex_ci.code_size = (uint32_t)SDL_strlen(g_rml_glsl_frag_texture);
+            fs_tex_ci.format = BH_GPU_SHADERFORMAT_GLSL;
+        }
+        else
+        {
+            vs_ci.code = shader_vert_spirv;
+            vs_ci.code_size = (uint32_t)sizeof(shader_vert_spirv);
+            vs_ci.format = BH_GPU_SHADERFORMAT_SPIRV;
+
+            fs_color_ci.code = shader_frag_color_spirv;
+            fs_color_ci.code_size = (uint32_t)sizeof(shader_frag_color_spirv);
+            fs_color_ci.format = BH_GPU_SHADERFORMAT_SPIRV;
+
+            fs_tex_ci.code = shader_frag_texture_spirv;
+            fs_tex_ci.code_size = (uint32_t)sizeof(shader_frag_texture_spirv);
+            fs_tex_ci.format = BH_GPU_SHADERFORMAT_SPIRV;
+        }
+
+        vertex_shader_ = BH_GPU_CreateShader(device_, &vs_ci);
+        fragment_color_shader_ = BH_GPU_CreateShader(device_, &fs_color_ci);
+        fragment_texture_shader_ = BH_GPU_CreateShader(device_, &fs_tex_ci);
 
         if (!vertex_shader_ || !fragment_color_shader_ || !fragment_texture_shader_)
         {
-            SDL_Log("[bh][rml] Failed to create UI shaders");
+            SDL_Log("[bh][rml] Failed to create UI shaders: %s", BH_GPU_GetLastError());
             return;
         }
 
-        SDL_GPUVertexBufferDescription vb_desc{};
+        BH_GPUVertexBufferDescription vb_desc{};
         vb_desc.slot = 0;
-        vb_desc.pitch = Uint32(sizeof(Rml::Vertex));
-        vb_desc.input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX;
+        vb_desc.pitch = uint32_t(sizeof(Rml::Vertex));
+        vb_desc.input_rate = BH_GPU_VERTEXINPUTRATE_VERTEX;
+        vb_desc.instance_step_rate = 0;
 
-        SDL_GPUVertexAttribute attrs[3]{};
+        BH_GPUVertexAttribute attrs[3]{};
         attrs[0].location = 0;
         attrs[0].buffer_slot = 0;
-        attrs[0].format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2;
+        attrs[0].format = BH_GPU_VERTEXELEMENTFORMAT_FLOAT2;
         attrs[0].offset = 0;
 
         attrs[1].location = 1;
         attrs[1].buffer_slot = 0;
-        attrs[1].format = SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4_NORM;
-        attrs[1].offset = Uint32(offsetof(Rml::Vertex, colour));
+        attrs[1].format = BH_GPU_VERTEXELEMENTFORMAT_UBYTE4_NORM;
+        attrs[1].offset = uint32_t(offsetof(Rml::Vertex, colour));
 
         attrs[2].location = 2;
         attrs[2].buffer_slot = 0;
-        attrs[2].format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2;
-        attrs[2].offset = Uint32(offsetof(Rml::Vertex, tex_coord));
+        attrs[2].format = BH_GPU_VERTEXELEMENTFORMAT_FLOAT2;
+        attrs[2].offset = uint32_t(offsetof(Rml::Vertex, tex_coord));
 
-        SDL_GPUColorTargetBlendState blend{};
+        BH_GPUColorTargetBlendState blend{};
         blend.enable_blend = true;
-        blend.src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
-        blend.dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-        blend.color_blend_op = SDL_GPU_BLENDOP_ADD;
-        blend.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE;
-        blend.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-        blend.alpha_blend_op = SDL_GPU_BLENDOP_ADD;
-        blend.color_write_mask =
-            SDL_GPU_COLORCOMPONENT_R | SDL_GPU_COLORCOMPONENT_G | SDL_GPU_COLORCOMPONENT_B | SDL_GPU_COLORCOMPONENT_A;
+        blend.src_color_blendfactor = BH_GPU_BLENDFACTOR_SRC_ALPHA;
+        blend.dst_color_blendfactor = BH_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+        blend.color_blend_op = BH_GPU_BLENDOP_ADD;
+        blend.src_alpha_blendfactor = BH_GPU_BLENDFACTOR_ONE;
+        blend.dst_alpha_blendfactor = BH_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+        blend.alpha_blend_op = BH_GPU_BLENDOP_ADD;
+        blend.enable_color_write_mask = false;
 
-        SDL_GPUColorTargetDescription color_target{};
+        BH_GPUColorTargetDescription color_target{};
         color_target.format = color_format_;
         color_target.blend_state = blend;
 
-        SDL_GPUGraphicsPipelineCreateInfo ci{};
+        BH_GPUGraphicsPipelineCreateInfo ci{};
         ci.vertex_shader = vertex_shader_;
+        ci.fragment_shader = fragment_color_shader_;
+
         ci.vertex_input_state.num_vertex_buffers = 1;
         ci.vertex_input_state.vertex_buffer_descriptions = &vb_desc;
         ci.vertex_input_state.num_vertex_attributes = 3;
         ci.vertex_input_state.vertex_attributes = attrs;
 
-        ci.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
-        ci.rasterizer_state.fill_mode = SDL_GPU_FILLMODE_FILL;
-        ci.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_NONE;
+        ci.primitive_type = BH_GPU_PRIMITIVETYPE_TRIANGLELIST;
+
+        ci.rasterizer_state.fill_mode = BH_GPU_FILLMODE_FILL;
+        ci.rasterizer_state.cull_mode = BH_GPU_CULLMODE_NONE;
+        ci.rasterizer_state.front_face = BH_GPU_FRONTFACE_COUNTER_CLOCKWISE;
+
+        ci.multisample_state.sample_count = BH_GPU_SAMPLECOUNT_1;
 
         ci.depth_stencil_state.enable_depth_test = false;
         ci.depth_stencil_state.enable_depth_write = false;
-        ci.depth_stencil_state.compare_op = SDL_GPU_COMPAREOP_ALWAYS;
+        ci.depth_stencil_state.compare_op = BH_GPU_COMPAREOP_ALWAYS;
 
         ci.target_info.num_color_targets = 1;
         ci.target_info.color_target_descriptions = &color_target;
 
-        if (depth_format_ != SDL_GPU_TEXTUREFORMAT_INVALID)
+        if (depth_format_ != 0)
         {
             ci.target_info.has_depth_stencil_target = true;
             ci.target_info.depth_stencil_format = depth_format_;
         }
 
-        ci.fragment_shader = fragment_color_shader_;
-        pipeline_color_ = SDL_CreateGPUGraphicsPipeline(device_, &ci);
+        pipeline_color_ = BH_GPU_CreateGraphicsPipeline(device_, &ci);
 
         ci.fragment_shader = fragment_texture_shader_;
-        pipeline_texture_ = SDL_CreateGPUGraphicsPipeline(device_, &ci);
+        pipeline_texture_ = BH_GPU_CreateGraphicsPipeline(device_, &ci);
 
         if (!pipeline_color_ || !pipeline_texture_)
         {
-            SDL_Log("[bh][rml] Failed to create UI pipelines");
+            SDL_Log("[bh][rml] Failed to create UI pipelines: %s", BH_GPU_GetLastError());
         }
     }
 
@@ -876,39 +964,38 @@ class BH_RmlRenderBackend
         for (const auto &b : buffers_)
         {
             if (b->transfer)
-                SDL_ReleaseGPUTransferBuffer(device_, b->transfer);
+                BH_GPU_ReleaseTransferBuffer(device_, b->transfer);
             if (b->buffer)
-                SDL_ReleaseGPUBuffer(device_, b->buffer);
+                BH_GPU_ReleaseBuffer(device_, b->buffer);
         }
         buffers_.clear();
 
         if (pipeline_color_)
-            SDL_ReleaseGPUGraphicsPipeline(device_, pipeline_color_);
+            BH_GPU_ReleaseGraphicsPipeline(device_, pipeline_color_);
         if (pipeline_texture_)
-            SDL_ReleaseGPUGraphicsPipeline(device_, pipeline_texture_);
+            BH_GPU_ReleaseGraphicsPipeline(device_, pipeline_texture_);
         pipeline_color_ = nullptr;
         pipeline_texture_ = nullptr;
 
         if (vertex_shader_)
-            SDL_ReleaseGPUShader(device_, vertex_shader_);
+            BH_GPU_ReleaseShader(device_, vertex_shader_);
         if (fragment_color_shader_)
-            SDL_ReleaseGPUShader(device_, fragment_color_shader_);
+            BH_GPU_ReleaseShader(device_, fragment_color_shader_);
         if (fragment_texture_shader_)
-            SDL_ReleaseGPUShader(device_, fragment_texture_shader_);
+            BH_GPU_ReleaseShader(device_, fragment_texture_shader_);
         vertex_shader_ = nullptr;
         fragment_color_shader_ = nullptr;
         fragment_texture_shader_ = nullptr;
 
         if (sampler_linear_)
-            SDL_ReleaseGPUSampler(device_, sampler_linear_);
+            BH_GPU_ReleaseSampler(device_, sampler_linear_);
         sampler_linear_ = nullptr;
     }
 
-    BH_RmlBuffer *AcquireBuffer(int required_bytes, SDL_GPUBufferUsageFlags usage)
+    BH_RmlBuffer *AcquireBuffer(int required_bytes, uint32_t usage)
     {
         required_bytes = std::max(required_bytes, 1);
 
-        // Update iteration for unique_ptr
         for (const auto &b_ptr : buffers_)
         {
             if (!b_ptr->in_use && b_ptr->usage == usage && b_ptr->capacity >= required_bytes)
@@ -918,93 +1005,101 @@ class BH_RmlRenderBackend
             }
         }
 
-        // Create struct locally to fill data
         BH_RmlBuffer b{};
         b.usage = usage;
         b.capacity = required_bytes;
         b.in_use = true;
 
-        SDL_GPUBufferCreateInfo buf_ci{};
+        BH_GPUBufferCreateInfo buf_ci{};
         buf_ci.usage = usage;
-        buf_ci.size = Uint32(required_bytes);
+        buf_ci.size = uint32_t(required_bytes);
 
-        SDL_GPUTransferBufferCreateInfo tci{};
-        tci.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-        tci.size = Uint32(required_bytes);
+        BH_GPUTransferBufferCreateInfo tci{};
+        tci.usage = BH_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+        tci.size = uint32_t(required_bytes);
 
-        b.transfer = SDL_CreateGPUTransferBuffer(device_, &tci);
-        b.buffer = SDL_CreateGPUBuffer(device_, &buf_ci);
+        b.transfer = BH_GPU_CreateTransferBuffer(device_, &tci);
+        b.buffer = BH_GPU_CreateBuffer(device_, &buf_ci);
 
         if (!b.transfer || !b.buffer)
         {
             if (b.transfer)
-                SDL_ReleaseGPUTransferBuffer(device_, b.transfer);
+                BH_GPU_ReleaseTransferBuffer(device_, b.transfer);
             if (b.buffer)
-                SDL_ReleaseGPUBuffer(device_, b.buffer);
+                BH_GPU_ReleaseBuffer(device_, b.buffer);
             return nullptr;
         }
 
-        // Push unique_ptr to vector
         buffers_.push_back(std::make_unique<BH_RmlBuffer>(b));
-
-        // Return the raw pointer managed by the unique_ptr
         return buffers_.back().get();
     }
 
-    void DrawGeometry(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass, BH_RmlGeometry *geom,
-                      Rml::Vector2f translation, SDL_GPUTexture *texture)
+    void DrawGeometry(BH_GPUCommandBuffer *cmd, BH_GPURenderPass *pass, BH_RmlGeometry *geom,
+                      Rml::Vector2f translation, BH_GPUTexture *texture)
     {
         if (!geom || !geom->vertex_buffer || !geom->index_buffer)
             return;
 
-        SDL_GPUBufferBinding vb{};
+        BH_GPUBufferBinding vb{};
         vb.buffer = geom->vertex_buffer->buffer;
         vb.offset = 0;
-        SDL_BindGPUVertexBuffers(pass, 0, &vb, 1);
+        BH_GPU_BindVertexBuffers(pass, 0, &vb, 1);
 
-        SDL_GPUBufferBinding ib{};
+        BH_GPUBufferBinding ib{};
         ib.buffer = geom->index_buffer->buffer;
         ib.offset = 0;
-        SDL_BindGPUIndexBuffer(pass, &ib, SDL_GPU_INDEXELEMENTSIZE_32BIT);
+        BH_GPU_BindIndexBuffer(pass, &ib, BH_GPU_INDEXELEMENTSIZE_32BIT);
 
         // Uniforms: transform + translation.
-        SDL_PushGPUVertexUniformData(cmd, 0, &transform_, sizeof(transform_));
-        SDL_PushGPUVertexUniformData(cmd, 1, &translation, sizeof(translation));
+        BH_GPU_PushVertexUniformData(cmd, 0, &transform_, uint32_t(sizeof(transform_)));
 
-        if (texture)
+        if (use_gl_)
         {
-            SDL_BindGPUGraphicsPipeline(pass, pipeline_texture_);
-
-            SDL_GPUTextureSamplerBinding sampler_binding{};
-            sampler_binding.sampler = sampler_linear_;
-            sampler_binding.texture = texture;
-            SDL_BindGPUFragmentSamplers(pass, 0, &sampler_binding, 1);
+            // std140 padding (vec2 + vec2)
+            const float tr[4] = {translation.x, translation.y, 0.0f, 0.0f};
+            BH_GPU_PushVertexUniformData(cmd, 1, tr, uint32_t(sizeof(tr)));
         }
         else
         {
-            SDL_BindGPUGraphicsPipeline(pass, pipeline_color_);
+            BH_GPU_PushVertexUniformData(cmd, 1, &translation, uint32_t(sizeof(translation)));
         }
 
-        SDL_DrawGPUIndexedPrimitives(pass, Uint32(geom->num_indices), 1, 0, 0, 0);
+        if (texture)
+        {
+            BH_GPU_BindGraphicsPipeline(pass, pipeline_texture_);
+
+            BH_GPUTextureSamplerBinding sampler_binding{};
+            sampler_binding.sampler = sampler_linear_;
+            sampler_binding.texture = texture;
+            BH_GPU_BindFragmentSamplers(pass, 0, &sampler_binding, 1);
+        }
+        else
+        {
+            BH_GPU_BindGraphicsPipeline(pass, pipeline_color_);
+        }
+
+        BH_GPU_DrawIndexedPrimitives(pass, uint32_t(geom->num_indices), 1, 0, 0, 0);
     }
 
   private:
-    SDL_GPUDevice *device_ = nullptr;
-    SDL_Window *window_ = nullptr;
+    BH_GPUDevice *device_ = nullptr;
+    BH_Window *window_ = nullptr;
 
-    SDL_GPUTextureFormat color_format_ = SDL_GPU_TEXTUREFORMAT_INVALID;
-    SDL_GPUTextureFormat depth_format_ = SDL_GPU_TEXTUREFORMAT_INVALID;
+    bool use_gl_ = false;
 
-    SDL_GPUSampler *sampler_linear_ = nullptr;
-    SDL_GPUShader *vertex_shader_ = nullptr;
-    SDL_GPUShader *fragment_color_shader_ = nullptr;
-    SDL_GPUShader *fragment_texture_shader_ = nullptr;
+    BH_GPUTextureFormat color_format_ = 0;
+    BH_GPUTextureFormat depth_format_ = 0;
 
-    SDL_GPUGraphicsPipeline *pipeline_color_ = nullptr;
-    SDL_GPUGraphicsPipeline *pipeline_texture_ = nullptr;
+    BH_GPUSampler *sampler_linear_ = nullptr;
+    BH_GPUShader *vertex_shader_ = nullptr;
+    BH_GPUShader *fragment_color_shader_ = nullptr;
+    BH_GPUShader *fragment_texture_shader_ = nullptr;
 
-    SDL_GPUCommandBuffer *cmd_prepare_ = nullptr;
-    SDL_GPUCopyPass *copy_pass_ = nullptr;
+    BH_GPUGraphicsPipeline *pipeline_color_ = nullptr;
+    BH_GPUGraphicsPipeline *pipeline_texture_ = nullptr;
+
+    BH_GPUCommandBuffer *cmd_prepare_ = nullptr;
+    BH_GPUCopyPass *copy_pass_ = nullptr;
 
     uint32_t fb_w_ = 0;
     uint32_t fb_h_ = 0;
@@ -1013,13 +1108,14 @@ class BH_RmlRenderBackend
     Rml::Matrix4f transform_ = Rml::Matrix4f::Identity();
 
     bool scissor_enabled_ = false;
-    SDL_Rect scissor_rect_{};
+    BH_GPU_Rect scissor_rect_{};
 
     std::vector<std::unique_ptr<BH_RmlBuffer>> buffers_;
     std::vector<std::unique_ptr<BH_RmlCommand>> draw_commands_;
 
     std::vector<std::function<void()>> pending_end_frame_;
 };
+
 
 // -----------------------------
 //  RenderInterface forwarder
@@ -1246,8 +1342,8 @@ struct BH_UIContext
     Rml::ElementDocument *document = nullptr;
 
     /* Optional owned render targets (color is also registered as a BH_TextureHandle). */
-    SDL_GPUTexture *rt_color = nullptr;
-    SDL_GPUTexture *rt_depth = nullptr;
+    BH_GPUTexture *rt_color = nullptr;
+    BH_GPUTexture *rt_depth = nullptr;
     BH_TextureHandle rt_handle = 0;
     uint32_t rt_w = 0;
     uint32_t rt_h = 0;
@@ -1260,8 +1356,8 @@ struct BH_UIContext
 namespace
 {
 
-static void bh_ui_prepare_cb(void *user, SDL_GPUCommandBuffer *cmd, SDL_GPUCopyPass *copy_pass,
-                             const bh_mat4 *view_proj, uint32_t fb_w, uint32_t fb_h, float alpha)
+static void bh_ui_prepare_cb(void *user, BH_GPUCommandBuffer *cmd, BH_GPUCopyPass *copy_pass, const mat4 *view_proj,
+                             uint32_t fb_w, uint32_t fb_h, float alpha)
 {
     BH_UI *ui = reinterpret_cast<BH_UI *>(user);
     if (!ui || !ui->backend || !ui->context)
@@ -1280,8 +1376,8 @@ static void bh_ui_prepare_cb(void *user, SDL_GPUCommandBuffer *cmd, SDL_GPUCopyP
     ui->context->Render();
 }
 
-static void bh_ui_draw_cb(void *user, SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *render_pass,
-                          const bh_mat4 *view_proj, uint32_t fb_w, uint32_t fb_h, float alpha)
+static void bh_ui_draw_cb(void *user, BH_GPUCommandBuffer *cmd, BH_GPURenderPass *render_pass, const mat4 *view_proj,
+                          uint32_t fb_w, uint32_t fb_h, float alpha)
 {
     BH_UI *ui = reinterpret_cast<BH_UI *>(user);
     if (!ui || !ui->backend)
@@ -1319,13 +1415,13 @@ static void bh_ui_context_release_render_target(BH_UIContext *ctx)
     }
     else if (ctx->rt_color)
     {
-        SDL_ReleaseGPUTexture(ctx->renderer->device, ctx->rt_color);
+        BH_GPU_ReleaseTexture(ctx->renderer->device, ctx->rt_color);
         ctx->rt_color = nullptr;
     }
 
     if (ctx->rt_depth)
     {
-        SDL_ReleaseGPUTexture(ctx->renderer->device, ctx->rt_depth);
+        BH_GPU_ReleaseTexture(ctx->renderer->device, ctx->rt_depth);
         ctx->rt_depth = nullptr;
     }
 
@@ -1381,6 +1477,7 @@ extern "C"
             SDL_Log("[bh][ui] bh_ui_create: invalid args");
             return nullptr;
         }
+
 
         g_rml.Acquire(asset_root);
 
@@ -1584,38 +1681,38 @@ extern "C"
 
         bh_ui_context_release_render_target(ctx);
 
-        SDL_GPUTextureCreateInfo color_ci{};
-        color_ci.type = SDL_GPU_TEXTURETYPE_2D;
+        BH_GPUTextureCreateInfo color_ci{};
+        color_ci.type = BH_GPU_TEXTURETYPE_2D;
         color_ci.format = ctx->renderer->swapchain_format;
         color_ci.width = width;
         color_ci.height = height;
         color_ci.layer_count_or_depth = 1;
         color_ci.num_levels = 1;
-        color_ci.sample_count = SDL_GPU_SAMPLECOUNT_1;
-        color_ci.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER;
+        color_ci.sample_count = BH_GPU_SAMPLECOUNT_1;
+        color_ci.usage = BH_GPU_TEXTUREUSAGE_COLOR_TARGET | BH_GPU_TEXTUREUSAGE_SAMPLER;
 
-        SDL_GPUTexture *color_tex = SDL_CreateGPUTexture(ctx->renderer->device, &color_ci);
+        BH_GPUTexture *color_tex = BH_GPU_CreateTexture(ctx->renderer->device, &color_ci);
         if (!color_tex)
         {
-            SDL_Log("[bh][ui] SDL_CreateGPUTexture (ui rt color) failed: %s", SDL_GetError());
+            SDL_Log("[bh][ui] BH_GPU_CreateTexture (ui rt color) failed: %s", BH_GPU_GetLastError());
             return false;
         }
 
-        SDL_GPUTextureCreateInfo depth_ci{};
-        depth_ci.type = SDL_GPU_TEXTURETYPE_2D;
+        BH_GPUTextureCreateInfo depth_ci{};
+        depth_ci.type = BH_GPU_TEXTURETYPE_2D;
         depth_ci.format = ctx->renderer->depth_format;
         depth_ci.width = width;
         depth_ci.height = height;
         depth_ci.layer_count_or_depth = 1;
         depth_ci.num_levels = 1;
-        depth_ci.sample_count = SDL_GPU_SAMPLECOUNT_1;
-        depth_ci.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
+        depth_ci.sample_count = BH_GPU_SAMPLECOUNT_1;
+        depth_ci.usage = BH_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
 
-        SDL_GPUTexture *depth_tex = SDL_CreateGPUTexture(ctx->renderer->device, &depth_ci);
+        BH_GPUTexture *depth_tex = BH_GPU_CreateTexture(ctx->renderer->device, &depth_ci);
         if (!depth_tex)
         {
-            SDL_Log("[bh][ui] SDL_CreateGPUTexture (ui rt depth) failed: %s", SDL_GetError());
-            SDL_ReleaseGPUTexture(ctx->renderer->device, color_tex);
+            SDL_Log("[bh][ui] BH_GPU_CreateTexture (ui rt depth) failed: %s", BH_GPU_GetLastError());
+            BH_GPU_ReleaseTexture(ctx->renderer->device, color_tex);
             return false;
         }
 
@@ -1626,8 +1723,8 @@ extern "C"
         if (th == 0)
         {
             SDL_Log("[bh][ui] BH_TextureManager_RegisterExternalTexture failed for '%s'", dbg_name.c_str());
-            SDL_ReleaseGPUTexture(ctx->renderer->device, depth_tex);
-            SDL_ReleaseGPUTexture(ctx->renderer->device, color_tex);
+            BH_GPU_ReleaseTexture(ctx->renderer->device, depth_tex);
+            BH_GPU_ReleaseTexture(ctx->renderer->device, color_tex);
             return false;
         }
 
@@ -1642,12 +1739,13 @@ extern "C"
         return true;
     }
 
+
     BH_TextureHandle BH_UIContext_GetRenderTargetHandle(const BH_UIContext *ctx)
     {
         return ctx ? ctx->rt_handle : 0;
     }
 
-    SDL_GPUTexture *BH_UIContext_GetRenderTargetTexture(const BH_UIContext *ctx)
+    BH_GPUTexture *BH_UIContext_GetRenderTargetTexture(const BH_UIContext *ctx)
     {
         return ctx ? ctx->rt_color : nullptr;
     }
@@ -1706,20 +1804,20 @@ extern "C"
         /* Drive layout/animations. */
         ctx->context->Update();
 
-        SDL_GPUDevice *device = ctx->renderer->device;
+        BH_GPUDevice *device = ctx->renderer->device;
 
-        SDL_GPUCommandBuffer *cmd = SDL_AcquireGPUCommandBuffer(device);
+        BH_GPUCommandBuffer *cmd = BH_GPU_AcquireCommandBuffer(device);
         if (!cmd)
         {
-            SDL_Log("[bh][ui] SDL_AcquireGPUCommandBuffer failed: %s", SDL_GetError());
+            SDL_Log("[bh][ui] BH_GPU_AcquireCommandBuffer failed: %s", BH_GPU_GetLastError());
             return false;
         }
 
-        SDL_GPUCopyPass *copy_pass = SDL_BeginGPUCopyPass(cmd);
+        BH_GPUCopyPass *copy_pass = BH_GPU_BeginCopyPass(cmd);
         if (!copy_pass)
         {
-            SDL_Log("[bh][ui] SDL_BeginGPUCopyPass failed: %s", SDL_GetError());
-            SDL_CancelGPUCommandBuffer(cmd);
+            SDL_Log("[bh][ui] BH_GPU_BeginCopyPass failed: %s", BH_GPU_GetLastError());
+            BH_GPU_CancelCommandBuffer(cmd);
             ctx->backend->EndFrame(false);
             return false;
         }
@@ -1731,26 +1829,25 @@ extern "C"
         /* Generates draw commands + may enqueue texture uploads. */
         ctx->context->Render();
 
-        SDL_EndGPUCopyPass(copy_pass);
+        BH_GPU_EndCopyPass(copy_pass);
 
-        SDL_GPUColorTargetInfo color_ti{};
+        BH_GPUColorTargetInfo color_ti{};
         color_ti.texture = ctx->rt_color;
-        color_ti.load_op = SDL_GPU_LOADOP_CLEAR;
-        color_ti.store_op = SDL_GPU_STOREOP_STORE;
-        color_ti.clear_color = SDL_FColor{0.f, 0.f, 0.f, 0.f};
+        color_ti.load_op = BH_GPU_LOADOP_CLEAR;
+        color_ti.store_op = BH_GPU_STOREOP_STORE;
+        color_ti.clear_color = BH_GPUColor{0.f, 0.f, 0.f, 0.f};
 
-        SDL_GPUDepthStencilTargetInfo depth_ti{};
+        BH_GPUDepthStencilTargetInfo depth_ti{};
         depth_ti.texture = ctx->rt_depth;
-        depth_ti.load_op = SDL_GPU_LOADOP_CLEAR;
-        depth_ti.store_op = SDL_GPU_STOREOP_DONT_CARE;
+        depth_ti.load_op = BH_GPU_LOADOP_CLEAR;
+        depth_ti.store_op = BH_GPU_STOREOP_DONT_CARE;
         depth_ti.clear_depth = 1.0f;
-        depth_ti.clear_stencil = 0;
 
-        SDL_GPURenderPass *pass = SDL_BeginGPURenderPass(cmd, &color_ti, 1, &depth_ti);
+        BH_GPURenderPass *pass = BH_GPU_BeginRenderPass(cmd, &color_ti, 1, &depth_ti);
         if (!pass)
         {
-            SDL_Log("[bh][ui] SDL_BeginGPURenderPass (offscreen) failed: %s", SDL_GetError());
-            SDL_CancelGPUCommandBuffer(cmd);
+            SDL_Log("[bh][ui] BH_GPU_BeginRenderPass (offscreen) failed: %s", BH_GPU_GetLastError());
+            BH_GPU_CancelCommandBuffer(cmd);
             ctx->backend->EndFrame(false);
             g_rml.render_forwarder->SetActiveBackend(nullptr);
             return false;
@@ -1758,9 +1855,9 @@ extern "C"
 
         ctx->backend->RenderToPass(cmd, pass);
 
-        SDL_EndGPURenderPass(pass);
+        BH_GPU_EndRenderPass(pass);
 
-        const bool ok = SDL_SubmitGPUCommandBuffer(cmd);
+        const bool ok = BH_GPU_SubmitCommandBuffer(cmd);
         ctx->backend->EndFrame(ok);
 
         /* Avoid leaving a dangling active backend when multiple contexts render. */

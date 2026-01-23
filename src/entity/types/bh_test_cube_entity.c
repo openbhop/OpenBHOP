@@ -32,7 +32,7 @@ static void bh_test_cube_awake(BH_Entity *e, const BH_EntityServices *sv)
         }
     }
 
-    if (!BH_Mesh_CreateCube(&tc->mesh, (SDL_GPUDevice *)sv->gpu_device, sv->permanent_arena, half_extent, mat_a, mat_b))
+    if (!BH_Mesh_CreateCube(&tc->mesh, sv->gpu_device, sv->permanent_arena, half_extent, mat_a, mat_b))
     {
         SDL_Log("[bh] bh_test_cube: mesh creation failed");
         return;
@@ -71,7 +71,7 @@ static void bh_test_cube_destroy(BH_Entity *e, const BH_EntityServices *sv)
     BH_TestCubeEntity *tc = (BH_TestCubeEntity *)e;
     if (tc->mesh_created)
     {
-        BH_Mesh_Release(&tc->mesh, (SDL_GPUDevice *)sv->gpu_device);
+        BH_Mesh_Release(&tc->mesh, sv->gpu_device);
         tc->mesh_created = false;
     }
 }

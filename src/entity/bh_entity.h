@@ -9,13 +9,13 @@
 #include "../core/bh_parse.h"
 #include "../input/bh_input.h"
 #include "../physics/bh_physics.h"
+#include "../render/bh_gpu.h"
 
 struct BH_Scene;
 struct BH_SceneNode;
 struct BH_Material;
 struct BH_MaterialManager;
 struct BH_TextureManager;
-struct SDL_GPUDevice;
 struct BH_PhysicsWorld;
 struct BH_UI;
 
@@ -32,7 +32,7 @@ typedef struct BH_EntityKV
 typedef struct BH_EntityServices
 {
     BH_Arena *permanent_arena;          /* Persistent entity memory */
-    struct SDL_GPUDevice *gpu_device;   /* Mesh creation context */
+    BH_GPUDevice *gpu_device;           /* Mesh creation context */
     struct BH_TextureManager *textures; /* Runtime resources */
     struct BH_MaterialManager *materials;
     struct BH_Scene *scene;          /* Global scene state */
