@@ -144,6 +144,8 @@ static SDL_GPUPresentMode bh_to_sdl_present_mode(BH_GPUPresentMode mode)
 {
     switch (mode)
     {
+    case BH_GPU_PRESENTMODE_VSYNC:
+        return SDL_GPU_PRESENTMODE_VSYNC;
     case BH_GPU_PRESENTMODE_IMMEDIATE:
     default:
         return SDL_GPU_PRESENTMODE_IMMEDIATE;

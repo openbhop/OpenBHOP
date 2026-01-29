@@ -34,6 +34,8 @@ extern "C"
     {
         void *user;
         BH_UIActionFn on_action;
+        bool enable_hot_reload;
+        uint32_t hot_reload_interval_ms;
     } BH_InterfaceConfig;
 
     /* Lifetime */

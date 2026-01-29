@@ -239,6 +239,7 @@ bool BH_App_Tick(BH_App *app)
     }
 
     const uint64_t frame_start_ticks = SDL_GetPerformanceCounter();
+    const uint64_t frame_start_ns = SDL_GetTicksNS();
     if (!app->timing_initialized)
     {
         app->timing_freq = SDL_GetPerformanceFrequency();
@@ -262,7 +263,7 @@ bool BH_App_Tick(BH_App *app)
     {
         if (app->games[i].alive)
         {
-            BH_Input_BeginFrame(&app->games[i].input);
+            BH_Input_BeginFrame(&app->games[i].input, frame_start_ns);
         }
     }
 
@@ -312,7 +313,7 @@ bool BH_App_Tick(BH_App *app)
 
         if (elapsed_ns < app->timing_target_ns)
         {
-            SDL_DelayNS((uint64_t)(app->timing_target_ns - elapsed_ns));
+            // SDL_DelayNS((uint64_t)(app->timing_target_ns - elapsed_ns));
         }
     }
 #endif

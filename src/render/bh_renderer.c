@@ -375,6 +375,7 @@ bool BH_Renderer_Init(BH_Renderer *r, BH_Window *window, const char *asset_root,
     r->window = window;
 
     const bool debug = cfg ? cfg->debug_gpu : false;
+    const bool enable_vsync = cfg ? cfg->enable_vsync : false;
     const bool use_gl = (SDL_strcasecmp(BH_GPU_GetBackend()->name, "OpenGL") == 0);
     const BH_GPUShaderFormat shader_format = use_gl ? BH_GPU_SHADERFORMAT_GLSL : BH_GPU_SHADERFORMAT_SPIRV;
 
@@ -393,7 +394,8 @@ bool BH_Renderer_Init(BH_Renderer *r, BH_Window *window, const char *asset_root,
         return false;
     }
 
-    BH_GPU_SetSwapchainParameters(r->device, window, BH_GPU_SWAPCHAINCOMPOSITION_SDR, BH_GPU_PRESENTMODE_IMMEDIATE);
+    const BH_GPUPresentMode present_mode = enable_vsync ? BH_GPU_PRESENTMODE_VSYNC : BH_GPU_PRESENTMODE_IMMEDIATE;
+    BH_GPU_SetSwapchainParameters(r->device, window, BH_GPU_SWAPCHAINCOMPOSITION_SDR, present_mode);
 
     r->swapchain_format = BH_GPU_GetSwapchainTextureFormat(r->device, window);
     r->depth_format = BH_GPU_GetTextureFormat_D32_FLOAT();

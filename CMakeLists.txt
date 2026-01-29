@@ -155,6 +155,18 @@ file(GLOB_RECURSE BH_SOURCES "src/*.c" "src/*.cpp" "src/*.h")
 
 add_executable(bh ${BH_SOURCES})
 
+# ------------------------------------------------------------------------------
+# Optional: UI hot reload (developer convenience)
+# ------------------------------------------------------------------------------
+option(BH_ENABLE_UI_HOT_RELOAD "Enable UI hot reload polling (development)" OFF)
+set(BH_UI_HOT_RELOAD_INTERVAL_MS "250" CACHE STRING "UI hot reload poll interval in ms")
+
+if(BH_ENABLE_UI_HOT_RELOAD)
+    target_compile_definitions(bh PRIVATE BH_ENABLE_UI_HOT_RELOAD=1 BH_UI_HOT_RELOAD_INTERVAL_MS=${BH_UI_HOT_RELOAD_INTERVAL_MS})
+else()
+    target_compile_definitions(bh PRIVATE BH_ENABLE_UI_HOT_RELOAD=0)
+endif()
+
 target_include_directories(bh PRIVATE "src" "extern/interface/Backends")
 target_link_libraries(bh PRIVATE SDL3::SDL3 rmlui_core)
 
@@ -188,9 +200,9 @@ if(BH_EMSCRIPTEN)
     target_link_options(bh PRIVATE
         "SHELL:-sFORCE_FILESYSTEM=1"
         "SHELL:-sALLOW_MEMORY_GROWTH=1"
-		"SHELL:-sMAX_WEBGL_VERSION=2"
+        "SHELL:-sMAX_WEBGL_VERSION=2"
         "SHELL:-sMIN_WEBGL_VERSION=2"
-		"SHELL:-sSTACK_SIZE=2097152"
+        "SHELL:-sSTACK_SIZE=2097152"
 
         "SHELL:--shell-file ${CMAKE_CURRENT_SOURCE_DIR}/web/shell.html"
         "SHELL:--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/assets@/assets"
@@ -238,7 +250,10 @@ set_target_properties(bh PROPERTIES FOLDER "App")
 # (Optional) Show shader sources in the IDE for easy editing
 set(ALL_SHADER_SOURCES ${SHADER_VERTS} ${SHADER_FRAGS} ${SHADER_COMPS})
 source_group(TREE "${SHADER_SRC_DIR}" PREFIX "Shaders" FILES ${ALL_SHADER_SOURCES})
-target_sources(bh PRIVATE ${ALL_SHADER_SOURCES})
-set_source_files_properties(${ALL_SHADER_SOURCES}
-    PROPERTIES HEADER_FILE_ONLY TRUE VS_TOOL_OVERRIDE "Text")
 
+# Add them to the target so they appear in Visual Studio
+target_sources(bh PRIVATE ${ALL_SHADER_SOURCES})
+
+set_source_files_properties(${ALL_SHADER_SOURCES}
+    PROPERTIES HEADER_FILE_ONLY TRUE
+)

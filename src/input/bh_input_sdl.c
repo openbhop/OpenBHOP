@@ -115,23 +115,15 @@ void BH_Input_ProcessSDLEvent(BH_InputState *in, const SDL_Event *e)
         BH_Key key;
         if (bh_map_scancode(e->key.scancode, &key))
         {
-            BH_Input_SetKey(in, key, (e->type == SDL_EVENT_KEY_DOWN));
+            BH_Input_SetKey(in, key, (e->type == SDL_EVENT_KEY_DOWN), (uint64_t)e->key.timestamp);
         }
     }
 
     if (e->type == SDL_EVENT_MOUSE_MOTION)
     {
         /* SDL3 provides window-space coordinates; rel is delta. */
-        in->mouse_pos_px = (vec2){(float)e->motion.x, (float)e->motion.y};
-
-        const float dx = (float)e->motion.xrel;
-        const float dy = (float)e->motion.yrel;
-
-        in->mouse_delta_px.x += dx;
-        in->mouse_delta_px.y += dy;
-
-        /* Accumulate across render frames until a fixed tick consumes it. */
-        in->mouse_delta_accum_px.x += dx;
-        in->mouse_delta_accum_px.y += dy;
+        const vec2 pos_px = (vec2){(float)e->motion.x, (float)e->motion.y};
+        const vec2 delta_px = (vec2){(float)e->motion.xrel, (float)e->motion.yrel};
+        BH_Input_AddMouseMotion(in, pos_px, delta_px, (uint64_t)e->motion.timestamp);
     }
 }

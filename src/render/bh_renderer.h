@@ -24,6 +24,7 @@ struct BH_Scene;
 typedef struct BH_RendererConfig
 {
     bool debug_gpu;
+    bool enable_vsync;
 } BH_RendererConfig;
 
 /* Render Pass Injection Hooks

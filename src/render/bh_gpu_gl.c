@@ -646,7 +646,9 @@ static void bh_gl_set_swapchain_parameters(BH_GPUDevice *device, BH_Window *wind
     int interval = 0;
     switch (present_mode)
     {
-    // case BH_GPU_PRESENTMODE_FIFO: interval = 1; break;
+    case BH_GPU_PRESENTMODE_VSYNC:
+        interval = 1;
+        break;
     case BH_GPU_PRESENTMODE_IMMEDIATE:
     default:
         interval = 0;

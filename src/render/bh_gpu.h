@@ -66,6 +66,7 @@ extern "C"
     typedef enum BH_GPUPresentMode
     {
         BH_GPU_PRESENTMODE_IMMEDIATE = 1,
+        BH_GPU_PRESENTMODE_VSYNC = 2,
     } BH_GPUPresentMode;
 
     typedef enum BH_GPUTextureType

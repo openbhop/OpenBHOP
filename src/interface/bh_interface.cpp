@@ -239,11 +239,26 @@ extern "C"
         iface->window = BH_UI_GetWindow(ui);
         iface->context = BH_UI_GetRmlContext(ui);
         iface->asset_root = BH_UI_GetAssetRoot(ui);
-        iface->hot_reloader.Init(iface->asset_root);
 
         if (cfg)
         {
             iface->cfg = *cfg;
+        }
+
+        /*
+            UI hot reload is a development convenience, but the polling
+            implementation performs filesystem work on the main thread.
+
+            Doing this every few hundred milliseconds can create a very regular
+            hitch/stutter pattern across all platforms (desktop + web) because
+            it competes with frame time.
+
+            Keep it opt-in via config.
+        */
+        if (iface->cfg.enable_hot_reload)
+        {
+            const uint32_t interval_ms = (iface->cfg.hot_reload_interval_ms != 0) ? iface->cfg.hot_reload_interval_ms : 250u;
+            iface->hot_reloader.Init(iface->asset_root, std::chrono::milliseconds(interval_ms));
         }
 
         if (!iface->window || !iface->context)
@@ -299,7 +314,8 @@ extern "C"
         }
 
         // Hot reload RML/RCSS during development.
-        // We poll the assets/interface directory and reload any loaded documents/views when changes are detected.
+        // NOTE: This is opt-in (see BH_InterfaceConfig) to avoid periodic frame hitches.
+        if (iface->cfg.enable_hot_reload)
         {
             const std::vector<BH_UiHotReloadChange> changes = iface->hot_reloader.Poll();
             if (!changes.empty())
@@ -362,6 +378,9 @@ extern "C"
         if (!iface || !iface->context || !iface->window || !e)
             return false;
 
+        const BH_UIViewFlags visible_flags = bh_interface_visible_flags(iface);
+        const bool ui_wants_mouse = BH_UIView_HasFlag(visible_flags, BH_UIViewFlags::CaptureMouse);
+
         // Only route input-related events.
         switch (e->type)
         {
@@ -370,6 +389,9 @@ extern "C"
         case SDL_EVENT_MOUSE_BUTTON_UP:
         case SDL_EVENT_MOUSE_WHEEL:
         case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+            if (!ui_wants_mouse)
+                return false;
+            break;
         case SDL_EVENT_KEY_DOWN:
         case SDL_EVENT_KEY_UP:
         case SDL_EVENT_TEXT_INPUT:
@@ -532,10 +554,7 @@ extern "C"
             return false;
 
         const BH_UIViewFlags flags = bh_interface_visible_flags(iface);
-        if (BH_UIView_HasFlag(flags, BH_UIViewFlags::CaptureMouse))
-            return true;
-
-        return bh_rml_has_mouse_over(iface->context);
+        return BH_UIView_HasFlag(flags, BH_UIViewFlags::CaptureMouse);
     }
 
     bool BH_Interface_WantsKeyboard(const BH_Interface *iface)
