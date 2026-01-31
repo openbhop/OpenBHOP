@@ -9,6 +9,7 @@
 #include "entity/types/bh_player_entity.h"
 #include "entity/types/bh_test_cube_entity.h"
 #include "entity/bh_entity_factory.h"
+#include "map/bh_bsp_loader.h"
 #include "map/bh_cmap_loader.h"
 #include <SDL3/SDL.h>
 #include <assert.h>
@@ -166,18 +167,33 @@ bool BH_Game_LoadMap(BH_Game *game, const char *map_rel_path)
 
     bh_game_clear_level(game);
 
-    char cmap_path[512];
-    SDL_snprintf(cmap_path, (int)sizeof(cmap_path), "%s/%s", game->asset_root, map_rel_path);
+    char map_path[512];
+    SDL_snprintf(map_path, (int)sizeof(map_path), "%s/%s", game->asset_root, map_rel_path);
 
-    BH_CmapLoadResult res = {0};
-    const bool loaded = BH_Cmap_LoadIntoScene(cmap_path, &game->renderer, &game->scene, &game->physics_world,
-                                              &game->entity_sv, &game->level_arena, &res);
+    bool loaded = false;
+    BH_SceneNode *player_node = NULL;
 
-    game->player_node = res.player_node;
+    const char *ext = SDL_strrchr(map_rel_path, '.');
+    if (ext && SDL_strcasecmp(ext, ".bsp") == 0)
+    {
+        BH_BspLoadResult res = {0};
+        loaded = BH_Bsp_LoadIntoScene(map_path, &game->renderer, &game->scene, &game->physics_world, &game->entity_sv,
+                                      &game->level_arena, &res);
+        player_node = res.player_node;
+    }
+    else
+    {
+        BH_CmapLoadResult res = {0};
+        loaded = BH_Cmap_LoadIntoScene(map_path, &game->renderer, &game->scene, &game->physics_world, &game->entity_sv,
+                                       &game->level_arena, &res);
+        player_node = res.player_node;
+    }
+
+    game->player_node = player_node;
 
     if (!loaded)
     {
-        SDL_Log("[bh] failed to load map: %s", cmap_path);
+        SDL_Log("[bh] failed to load map: %s", map_path);
         bh_game_spawn_fallback_scene(game);
     }
 
@@ -324,7 +340,7 @@ bool BH_Game_Init(BH_Game *game, const BH_GameConfig *cfg, const char *asset_roo
     game->entity_sv.user = game;
     game->entity_sv.physics = &game->physics_world;
 
-    if (!BH_Game_LoadMap(game, "maps/test_movement.cmap"))
+    if (!BH_Game_LoadMap(game, "maps/bh_aztec.bsp"))
     {
         SDL_Log("[bh] Map load failed (fallback scene should be active)");
     }

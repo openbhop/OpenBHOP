@@ -411,6 +411,56 @@ BH_TextureHandle BH_TextureManager_LoadTextureFromMemory(BH_TextureManager *tm, 
     return handle;
 }
 
+BH_TextureHandle BH_TextureManager_CreateTextureFromRGBA8(BH_TextureManager *tm, const char *debug_name,
+                                                          const void *pixels_rgba8, uint32_t w, uint32_t h,
+                                                          uint32_t pitch_bytes, BH_TextureSemantic semantic)
+{
+    if (!tm || !tm->device || !tm->arena || !debug_name || !debug_name[0] || !pixels_rgba8 || w == 0 || h == 0 ||
+        pitch_bytes == 0)
+    {
+        return 0;
+    }
+
+    const uint32_t slot_cap = (uint32_t)(sizeof(tm->slots) / sizeof(tm->slots[0]));
+
+    /* Check cache */
+    for (uint32_t i = 0; i < slot_cap; ++i)
+    {
+        struct BH_TextureSlot *s = &tm->slots[i];
+        if (s->in_use && bh_slot_path_eq(s->path, debug_name))
+        {
+            s->refcount++;
+            return i + 1u;
+        }
+    }
+
+    const bool srgb = (semantic == BH_TEXTURE_SEMANTIC_ALBEDO);
+    BH_GPUTexture *tex = bh_upload_rgba8_texture(tm->device, pixels_rgba8, w, h, pitch_bytes,
+                                                 bh_tex_format_for_semantic(semantic));
+    if (!tex)
+    {
+        return 0;
+    }
+
+    BH_TextureHandle handle = bh_texture_manager_alloc_slot(tm);
+    if (!handle)
+    {
+        SDL_Log("[bh] Texture slots full (cap=%u)", slot_cap);
+        BH_GPU_ReleaseTexture(tm->device, tex);
+        return 0;
+    }
+
+    struct BH_TextureSlot *s = &tm->slots[handle - 1u];
+    s->path = bh_arena_strdup0(tm->arena, debug_name);
+    s->tex = tex;
+    s->w = w;
+    s->h = h;
+    s->srgb = srgb;
+    s->owned = true;
+
+    return handle;
+}
+
 BH_TextureHandle BH_TextureManager_RegisterExternalTexture(BH_TextureManager *tm, const char *debug_name,
                                                            BH_GPUTexture *tex, uint32_t w, uint32_t h, bool srgb,
                                                            bool take_ownership)

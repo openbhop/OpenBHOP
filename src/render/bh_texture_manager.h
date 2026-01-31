@@ -70,6 +70,16 @@ extern "C"
                                                              const void *bytes, size_t byte_len,
                                                              BH_TextureSemantic semantic);
 
+    /*
+        Creates a texture directly from RGBA8 pixel data.
+
+        - `debug_name` is used as a cache key (same behavior as LoadTexture*).
+        - `pixels_rgba8` must be tightly packed with the given `pitch_bytes`.
+    */
+    BH_TextureHandle BH_TextureManager_CreateTextureFromRGBA8(BH_TextureManager *tm, const char *debug_name,
+                                                              const void *pixels_rgba8, uint32_t w, uint32_t h,
+                                                              uint32_t pitch_bytes, BH_TextureSemantic semantic);
+
     /* Registers external texture. Optional ownership transfer. */
     BH_TextureHandle BH_TextureManager_RegisterExternalTexture(BH_TextureManager *tm, const char *debug_name,
                                                                BH_GPUTexture *tex, uint32_t w, uint32_t h, bool srgb,
