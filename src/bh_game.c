@@ -14,6 +14,14 @@
 #include <assert.h>
 #include <stdio.h>
 
+#ifndef BH_ENABLE_UI_HOT_RELOAD
+#define BH_ENABLE_UI_HOT_RELOAD 0
+#endif
+
+#ifndef BH_UI_HOT_RELOAD_INTERVAL_MS
+#define BH_UI_HOT_RELOAD_INTERVAL_MS 250u
+#endif
+
 // -----------------------------------------------------------------------------
 // Internal Helpers
 // -----------------------------------------------------------------------------
@@ -127,7 +135,7 @@ static void bh_game_clear_level(BH_Game *game)
 {
     if (game->renderer.device)
     {
-        SDL_WaitForGPUIdle(game->renderer.device);
+        BH_GPU_WaitForIdle(game->renderer.device);
     }
 
     BH_Entity_DestroyAll(&game->scene, &game->entity_sv);
@@ -233,7 +241,23 @@ bool BH_Game_Init(BH_Game *game, const BH_GameConfig *cfg, const char *asset_roo
         return false;
     }
 
-    const SDL_WindowFlags wflags = SDL_WINDOW_RESIZABLE;
+    const bool use_gl = (SDL_strcasecmp(BH_GPU_GetBackend()->name, "OpenGL") == 0);
+
+    SDL_WindowFlags wflags = SDL_WINDOW_RESIZABLE;
+    if (use_gl)
+    {
+        // When using the OpenGL backend, SDL needs to create an OpenGL-capable
+        // window and we must request the GL context attributes up front.
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+        SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+
+        wflags |= SDL_WINDOW_OPENGL;
+    }
+
     game->window = SDL_CreateWindow(cfg->title, cfg->width, cfg->height, wflags);
     if (!game->window)
     {
@@ -245,18 +269,23 @@ bool BH_Game_Init(BH_Game *game, const BH_GameConfig *cfg, const char *asset_roo
     }
     game->window_id = SDL_GetWindowID(game->window);
 
-    if (!SDL_SetWindowRelativeMouseMode(game->window, true))
-    {
-        SDL_Log("[bh] SDL_SetWindowRelativeMouseMode failed: %s", SDL_GetError());
-    }
+    game->mouse_relative = false;
+    (void)SDL_SetWindowRelativeMouseMode(game->window, false);
 
-    BH_Input_Init(&game->input);
+    game->mouse_grabbed = false;
+    (void)SDL_SetWindowMouseGrab(game->window, false);
+
+    (void)SDL_ShowCursor();
+    game->cursor_visible = true;
+
+    BH_Input_Init(&game->input, SDL_GetTicksNS(), game->fixed_dt);
 
     BH_Console_Init();
     (void)BH_Console_RegisterCommand("quit", "Close the application", &bh_concmd_quit);
 
     BH_RendererConfig rcfg = {0};
     rcfg.debug_gpu = cfg->debug_gpu;
+    rcfg.enable_vsync = cfg->enable_vsync;
 
     if (!BH_Renderer_Init(&game->renderer, game->window, asset_root, &rcfg, &game->permanent_arena))
     {
@@ -288,7 +317,7 @@ bool BH_Game_Init(BH_Game *game, const BH_GameConfig *cfg, const char *asset_roo
 
     game->entity_sv = (BH_EntityServices){0};
     game->entity_sv.permanent_arena = &game->level_arena;
-    game->entity_sv.gpu_device = (struct SDL_GPUDevice *)game->renderer.device;
+    game->entity_sv.gpu_device = game->renderer.device;
     game->entity_sv.textures = &game->renderer.textures;
     game->entity_sv.materials = &game->renderer.materials;
     game->entity_sv.scene = &game->scene;
@@ -302,7 +331,8 @@ bool BH_Game_Init(BH_Game *game, const BH_GameConfig *cfg, const char *asset_roo
 
     if (game->player_node)
     {
-        game->input.view_angles_deg = vec3_angleto(game->player_node->local_curr.position, (vec3){0, 0, 0});
+        BH_Input_SetViewAngles(&game->input,
+                               vec3_angleto(game->player_node->local_curr.position, (vec3){0, 0, 0}));
     }
 
     game->ui_render = BH_UI_Create(&game->renderer, game->window, asset_root);
@@ -321,6 +351,8 @@ bool BH_Game_Init(BH_Game *game, const BH_GameConfig *cfg, const char *asset_roo
         const BH_InterfaceConfig iface_cfg = {
             .user = game,
             .on_action = bh_game_on_ui_action,
+            .enable_hot_reload = (BH_ENABLE_UI_HOT_RELOAD != 0),
+            .hot_reload_interval_ms = (uint32_t)BH_UI_HOT_RELOAD_INTERVAL_MS,
         };
         game->ui = BH_Interface_Create(game->ui_render, &iface_cfg);
         if (game->ui)
@@ -340,7 +372,7 @@ void BH_Game_Shutdown(BH_Game *game)
 
     if (game->renderer.device)
     {
-        SDL_WaitForGPUIdle(game->renderer.device);
+        BH_GPU_WaitForIdle(game->renderer.device);
         BH_Entity_DestroyAll(&game->scene, &game->entity_sv);
     }
 
@@ -356,6 +388,7 @@ void BH_Game_Shutdown(BH_Game *game)
     if (game->window)
     {
         (void)SDL_SetWindowRelativeMouseMode(game->window, false);
+        (void)SDL_SetWindowMouseGrab(game->window, false);
         (void)SDL_ShowCursor();
         SDL_DestroyWindow(game->window);
         game->window = NULL;
@@ -420,15 +453,45 @@ void BH_Game_Update(BH_Game *game, double frame_dt_s)
 
     if (game->window)
     {
-        if (ui_wants_mouse)
+        const bool want_relative = !ui_wants_mouse;
+        if (want_relative != game->mouse_relative)
         {
-            (void)SDL_SetWindowRelativeMouseMode(game->window, false);
-            (void)SDL_ShowCursor();
+            if (!SDL_SetWindowRelativeMouseMode(game->window, want_relative))
+            {
+                SDL_Log("[bh] SDL_SetWindowRelativeMouseMode failed: %s", SDL_GetError());
+            }
+            else
+            {
+                game->mouse_relative = want_relative;
+            }
         }
-        else
+
+        // Keep the mouse confined to the window while in first-person look.
+        const bool want_grab = want_relative;
+        if (want_grab != game->mouse_grabbed)
         {
-            (void)SDL_SetWindowRelativeMouseMode(game->window, true);
-            (void)SDL_HideCursor();
+            if (!SDL_SetWindowMouseGrab(game->window, want_grab))
+            {
+                SDL_Log("[bh] SDL_SetWindowMouseGrab failed: %s", SDL_GetError());
+            }
+            else
+            {
+                game->mouse_grabbed = want_grab;
+            }
+        }
+
+        const bool want_cursor_visible = ui_wants_mouse;
+        if (want_cursor_visible != game->cursor_visible)
+        {
+            if (want_cursor_visible)
+            {
+                (void)SDL_ShowCursor();
+            }
+            else
+            {
+                (void)SDL_HideCursor();
+            }
+            game->cursor_visible = want_cursor_visible;
         }
 
         const bool text_active = SDL_TextInputActive(game->window);
@@ -449,7 +512,7 @@ void BH_Game_Update(BH_Game *game, double frame_dt_s)
 
     if (!ui_wants_mouse)
     {
-        BH_Input_UpdateViewAngles(&game->input);
+        BH_Input_UpdateViewAnglesFrame(&game->input);
     }
 
     if (game->input.pressed[BH_KEY_ESCAPE])
@@ -489,15 +552,16 @@ void BH_Game_Update(BH_Game *game, double frame_dt_s)
 
     const float alpha = (float)(game->accumulator / game->fixed_dt);
     vec3 view_offset = {0, 0, 0};
+    vec3 node_pos = {0, 0, 0};
 
     if (game->player_node && game->player_node->entity)
     {
         view_offset = BH_Entity_GetViewOffset(game->player_node->entity, &game->entity_sv);
+        node_pos = bh_node_lerp_position(game->player_node, alpha);
     }
 
-    const vec3 node_pos = bh_node_lerp_position(game->player_node, alpha);
     const vec3 cam_pos = vec3_add(node_pos, view_offset);
-    const mat4 view_proj = bh_build_viewproj(game->window, cam_pos, game->input.view_angles_deg);
+    const mat4 view_proj = bh_build_viewproj(game->window, cam_pos, game->input.view_angles_frame_deg);
 
     (void)BH_Renderer_RenderScene(&game->renderer, &game->scene, &view_proj, cam_pos, alpha);
 }

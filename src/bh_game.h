@@ -34,6 +34,10 @@ typedef struct BH_Game
     SDL_Window *window;
     SDL_WindowID window_id;
 
+    bool mouse_relative;
+    bool mouse_grabbed;
+    bool cursor_visible;
+
     /* Memory Management */
     BH_Arena permanent_arena;
     BH_Arena level_arena;   /* Reset on map change */

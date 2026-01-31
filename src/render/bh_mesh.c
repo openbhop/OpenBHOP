@@ -12,55 +12,55 @@
    Internal Helpers
    ----------------------------------------------------------------------------- */
 
-static bool bh_gpu_upload_buffer(SDL_GPUDevice *device, SDL_GPUBuffer *dst, const void *src, uint32_t size)
+static bool bh_gpu_upload_buffer(BH_GPUDevice *device, BH_GPUBuffer *dst, const void *src, uint32_t size)
 {
     assert(device && dst && src);
     assert(size > 0);
 
-    SDL_GPUTransferBufferCreateInfo tci = {.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, .size = size};
+    BH_GPUTransferBufferCreateInfo tci = {.usage = BH_GPU_TRANSFERBUFFERUSAGE_UPLOAD, .size = size};
 
-    SDL_GPUTransferBuffer *tbuf = SDL_CreateGPUTransferBuffer(device, &tci);
+    BH_GPUTransferBuffer *tbuf = BH_GPU_CreateTransferBuffer(device, &tci);
     if (!tbuf)
     {
-        SDL_Log("[bh] SDL_CreateGPUTransferBuffer failed: %s", SDL_GetError());
+        SDL_Log("[bh] BH_GPU_CreateTransferBuffer failed: %s", BH_GPU_GetLastError());
         return false;
     }
 
-    void *mapped = SDL_MapGPUTransferBuffer(device, tbuf, false);
+    void *mapped = BH_GPU_MapTransferBuffer(device, tbuf, false);
     if (!mapped)
     {
-        SDL_Log("[bh] SDL_MapGPUTransferBuffer failed: %s", SDL_GetError());
-        SDL_ReleaseGPUTransferBuffer(device, tbuf);
+        SDL_Log("[bh] BH_GPU_MapTransferBuffer failed: %s", BH_GPU_GetLastError());
+        BH_GPU_ReleaseTransferBuffer(device, tbuf);
         return false;
     }
 
     memcpy(mapped, src, size);
-    SDL_UnmapGPUTransferBuffer(device, tbuf);
+    BH_GPU_UnmapTransferBuffer(device, tbuf);
 
-    SDL_GPUCommandBuffer *cmd = SDL_AcquireGPUCommandBuffer(device);
+    BH_GPUCommandBuffer *cmd = BH_GPU_AcquireCommandBuffer(device);
     if (!cmd)
     {
-        SDL_Log("[bh] SDL_AcquireGPUCommandBuffer failed: %s", SDL_GetError());
-        SDL_ReleaseGPUTransferBuffer(device, tbuf);
+        SDL_Log("[bh] BH_GPU_AcquireCommandBuffer failed: %s", BH_GPU_GetLastError());
+        BH_GPU_ReleaseTransferBuffer(device, tbuf);
         return false;
     }
 
-    SDL_GPUCopyPass *copy = SDL_BeginGPUCopyPass(cmd);
+    BH_GPUCopyPass *copy = BH_GPU_BeginCopyPass(cmd);
 
-    SDL_GPUTransferBufferLocation src_loc = {.transfer_buffer = tbuf, .offset = 0};
-    SDL_GPUBufferRegion dst_reg = {.buffer = dst, .offset = 0, .size = size};
+    BH_GPUTransferBufferLocation src_loc = {.transfer_buffer = tbuf, .offset = 0};
+    BH_GPUBufferRegion dst_reg = {.buffer = dst, .offset = 0, .size = size};
 
-    SDL_UploadToGPUBuffer(copy, &src_loc, &dst_reg, false);
-    SDL_EndGPUCopyPass(copy);
+    BH_GPU_UploadToBuffer(copy, &src_loc, &dst_reg, false);
+    BH_GPU_EndCopyPass(copy);
 
-    if (!SDL_SubmitGPUCommandBuffer(cmd))
+    if (!BH_GPU_SubmitCommandBuffer(cmd))
     {
-        SDL_Log("[bh] SDL_SubmitGPUCommandBuffer failed: %s", SDL_GetError());
-        SDL_ReleaseGPUTransferBuffer(device, tbuf);
+        SDL_Log("[bh] bh_mesh.c BH_GPU_SubmitCommandBuffer failed: %s", BH_GPU_GetLastError());
+        BH_GPU_ReleaseTransferBuffer(device, tbuf);
         return false;
     }
 
-    SDL_ReleaseGPUTransferBuffer(device, tbuf);
+    BH_GPU_ReleaseTransferBuffer(device, tbuf);
     return true;
 }
 
@@ -68,7 +68,7 @@ static bool bh_gpu_upload_buffer(SDL_GPUDevice *device, SDL_GPUBuffer *dst, cons
    Public API
    ----------------------------------------------------------------------------- */
 
-bool BH_Mesh_CreateCube(BH_Mesh *out_mesh, SDL_GPUDevice *device, BH_Arena *permanent_arena,
+bool BH_Mesh_CreateCube(BH_Mesh *out_mesh, BH_GPUDevice *device, BH_Arena *permanent_arena,
                         float half_extent_hammer_units, const BH_Material *mat_a, const BH_Material *mat_b)
 {
     if (!out_mesh || !device || !permanent_arena)
@@ -123,34 +123,34 @@ bool BH_Mesh_CreateCube(BH_Mesh *out_mesh, SDL_GPUDevice *device, BH_Arena *perm
         20, 21, 22, 22, 23, 20, /* -Z */
     };
 
-    SDL_GPUBufferCreateInfo vbci = {.usage = SDL_GPU_BUFFERUSAGE_VERTEX, .size = sizeof(v)};
-    SDL_GPUBufferCreateInfo ibci = {.usage = SDL_GPU_BUFFERUSAGE_INDEX, .size = sizeof(idx)};
+    BH_GPUBufferCreateInfo vbci = {.usage = BH_GPU_BUFFERUSAGE_VERTEX, .size = (uint32_t)sizeof(v)};
+    BH_GPUBufferCreateInfo ibci = {.usage = BH_GPU_BUFFERUSAGE_INDEX, .size = (uint32_t)sizeof(idx)};
 
-    SDL_GPUBuffer *vb = SDL_CreateGPUBuffer(device, &vbci);
-    SDL_GPUBuffer *ib = SDL_CreateGPUBuffer(device, &ibci);
+    BH_GPUBuffer *vb = BH_GPU_CreateBuffer(device, &vbci);
+    BH_GPUBuffer *ib = BH_GPU_CreateBuffer(device, &ibci);
 
     if (!vb || !ib)
     {
-        SDL_Log("[bh] Failed to create GPU buffers: %s", SDL_GetError());
+        SDL_Log("[bh] Failed to create GPU buffers: %s", BH_GPU_GetLastError());
         if (vb)
-            SDL_ReleaseGPUBuffer(device, vb);
+            BH_GPU_ReleaseBuffer(device, vb);
         if (ib)
-            SDL_ReleaseGPUBuffer(device, ib);
+            BH_GPU_ReleaseBuffer(device, ib);
         return false;
     }
 
     if (!bh_gpu_upload_buffer(device, vb, v, sizeof(v)) || !bh_gpu_upload_buffer(device, ib, idx, sizeof(idx)))
     {
-        SDL_ReleaseGPUBuffer(device, vb);
-        SDL_ReleaseGPUBuffer(device, ib);
+        BH_GPU_ReleaseBuffer(device, vb);
+        BH_GPU_ReleaseBuffer(device, ib);
         return false;
     }
 
     BH_Submesh *subs = (BH_Submesh *)BH_Arena_Alloc(permanent_arena, 2 * sizeof(BH_Submesh), 8);
     if (!subs)
     {
-        SDL_ReleaseGPUBuffer(device, vb);
-        SDL_ReleaseGPUBuffer(device, ib);
+        BH_GPU_ReleaseBuffer(device, vb);
+        BH_GPU_ReleaseBuffer(device, ib);
         return false;
     }
 
@@ -162,7 +162,7 @@ bool BH_Mesh_CreateCube(BH_Mesh *out_mesh, SDL_GPUDevice *device, BH_Arena *perm
         .index_buffer = ib,
         .vertex_count = 24,
         .index_count = 36,
-        .index_element_size = SDL_GPU_INDEXELEMENTSIZE_16BIT,
+        .index_element_size = BH_GPU_INDEXELEMENTSIZE_16BIT,
         .submeshes = subs,
         .submesh_count = 2,
     };
@@ -170,7 +170,7 @@ bool BH_Mesh_CreateCube(BH_Mesh *out_mesh, SDL_GPUDevice *device, BH_Arena *perm
     return true;
 }
 
-bool BH_Mesh_CreateTriangleList(BH_Mesh *out_mesh, SDL_GPUDevice *device, BH_Arena *arena, const BH_Vertex *vertices,
+bool BH_Mesh_CreateTriangleList(BH_Mesh *out_mesh, BH_GPUDevice *device, BH_Arena *arena, const BH_Vertex *vertices,
                                 uint32_t vertex_count, const BH_Material *material)
 {
     if (!out_mesh || !device || !arena || !vertices || vertex_count == 0)
@@ -204,19 +204,19 @@ bool BH_Mesh_CreateTriangleList(BH_Mesh *out_mesh, SDL_GPUDevice *device, BH_Are
             p[i] = (uint16_t)i;
     }
 
-    SDL_GPUBufferCreateInfo vbci = {.usage = SDL_GPU_BUFFERUSAGE_VERTEX, .size = vertex_count * sizeof(BH_Vertex)};
-    SDL_GPUBufferCreateInfo ibci = {.usage = SDL_GPU_BUFFERUSAGE_INDEX, .size = idx_bytes};
+    BH_GPUBufferCreateInfo vbci = {.usage = BH_GPU_BUFFERUSAGE_VERTEX, .size = vertex_count * (uint32_t)sizeof(BH_Vertex)};
+    BH_GPUBufferCreateInfo ibci = {.usage = BH_GPU_BUFFERUSAGE_INDEX, .size = idx_bytes};
 
-    SDL_GPUBuffer *vb = SDL_CreateGPUBuffer(device, &vbci);
-    SDL_GPUBuffer *ib = SDL_CreateGPUBuffer(device, &ibci);
+    BH_GPUBuffer *vb = BH_GPU_CreateBuffer(device, &vbci);
+    BH_GPUBuffer *ib = BH_GPU_CreateBuffer(device, &ibci);
 
     if (!vb || !ib)
     {
-        SDL_Log("[bh] Failed to create GPU buffers: %s", SDL_GetError());
+        SDL_Log("[bh] Failed to create GPU buffers: %s", BH_GPU_GetLastError());
         if (vb)
-            SDL_ReleaseGPUBuffer(device, vb);
+            BH_GPU_ReleaseBuffer(device, vb);
         if (ib)
-            SDL_ReleaseGPUBuffer(device, ib);
+            BH_GPU_ReleaseBuffer(device, ib);
         SDL_free(idx);
         return false;
     }
@@ -228,16 +228,16 @@ bool BH_Mesh_CreateTriangleList(BH_Mesh *out_mesh, SDL_GPUDevice *device, BH_Are
 
     if (!ok_upload)
     {
-        SDL_ReleaseGPUBuffer(device, vb);
-        SDL_ReleaseGPUBuffer(device, ib);
+        BH_GPU_ReleaseBuffer(device, vb);
+        BH_GPU_ReleaseBuffer(device, ib);
         return false;
     }
 
     BH_Submesh *subs = (BH_Submesh *)BH_Arena_Alloc(arena, sizeof(BH_Submesh), 8);
     if (!subs)
     {
-        SDL_ReleaseGPUBuffer(device, vb);
-        SDL_ReleaseGPUBuffer(device, ib);
+        BH_GPU_ReleaseBuffer(device, vb);
+        BH_GPU_ReleaseBuffer(device, ib);
         return false;
     }
 
@@ -252,7 +252,7 @@ bool BH_Mesh_CreateTriangleList(BH_Mesh *out_mesh, SDL_GPUDevice *device, BH_Are
         .index_buffer = ib,
         .vertex_count = vertex_count,
         .index_count = index_count,
-        .index_element_size = use_u32 ? SDL_GPU_INDEXELEMENTSIZE_32BIT : SDL_GPU_INDEXELEMENTSIZE_16BIT,
+        .index_element_size = use_u32 ? BH_GPU_INDEXELEMENTSIZE_32BIT : BH_GPU_INDEXELEMENTSIZE_16BIT,
         .submeshes = subs,
         .submesh_count = 1,
     };
@@ -260,7 +260,7 @@ bool BH_Mesh_CreateTriangleList(BH_Mesh *out_mesh, SDL_GPUDevice *device, BH_Are
     return true;
 }
 
-void BH_Mesh_Release(BH_Mesh *mesh, SDL_GPUDevice *device)
+void BH_Mesh_Release(BH_Mesh *mesh, BH_GPUDevice *device)
 {
     if (!mesh || !device)
     {
@@ -268,9 +268,9 @@ void BH_Mesh_Release(BH_Mesh *mesh, SDL_GPUDevice *device)
     }
 
     if (mesh->vertex_buffer)
-        SDL_ReleaseGPUBuffer(device, mesh->vertex_buffer);
+        BH_GPU_ReleaseBuffer(device, mesh->vertex_buffer);
     if (mesh->index_buffer)
-        SDL_ReleaseGPUBuffer(device, mesh->index_buffer);
+        BH_GPU_ReleaseBuffer(device, mesh->index_buffer);
 
     *mesh = (BH_Mesh){0};
 }

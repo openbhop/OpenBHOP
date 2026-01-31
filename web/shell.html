@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenBHOP</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: #000;
+      }
+
+      /* SDL will render into this canvas. */
+      #canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        border: 0;
+        padding: 0;
+        margin: 0;
+        outline: none;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+
+    <script>
+      // Emscripten runtime configuration.
+      var Module = {
+        canvas: (function () {
+          return document.getElementById("canvas");
+        })(),
+        print: (function () {
+          return function (text) {
+            console.log(text);
+          };
+        })(),
+        printErr: function (text) {
+          console.error(text);
+        },
+      };
+    </script>
+
+    {{{ SCRIPT }}}
+  </body>
+</html>

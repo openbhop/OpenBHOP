@@ -6,7 +6,7 @@
 
 #include "../math/bh_math.h"
 #include "bh_shader_reflection.h"
-#include <SDL3/SDL_gpu.h>
+#include "bh_gpu.h"
 
 /* -----------------------------------------------------------------------------
     Texture Bindings
@@ -42,7 +42,7 @@ bool BH_ParamBlock_Init(BH_ParamBlock *pb, const BH_ShaderStageReflection *refl,
 bool BH_ParamBlock_InitSingleSlot(BH_ParamBlock *pb, const BH_ShaderStageReflection *refl, uint32_t slot, void *storage,
                                   uint32_t storage_size);
 bool BH_ParamBlock_SetRaw(BH_ParamBlock *pb, const char *name, const void *data, uint32_t data_size);
-void BH_ParamBlock_PushUniforms(const BH_ParamBlock *pb, SDL_GPUCommandBuffer *cmd);
+void BH_ParamBlock_PushUniforms(const BH_ParamBlock *pb, BH_GPUCommandBuffer *cmd);
 
 static BH_FORCEINLINE bool BH_ParamBlock_SetMat4(BH_ParamBlock *pb, const char *name, const mat4 *m)
 {

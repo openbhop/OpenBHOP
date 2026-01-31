@@ -7,7 +7,7 @@
 #include "../core/bh_arena.h"
 #include "../core/bh_core.h"
 
-#include <SDL3/SDL_gpu.h>
+#include "bh_gpu.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -29,14 +29,14 @@ extern "C"
 
     typedef struct BH_TextureManager
     {
-        SDL_GPUDevice *device;
+        BH_GPUDevice *device;
         BH_Arena *arena;
-        SDL_GPUSampler *sampler_linear_repeat;
+        BH_GPUSampler *sampler_linear_repeat;
 
         struct BH_TextureSlot
         {
             const char *path; /* arena-owned */
-            SDL_GPUTexture *tex;
+            BH_GPUTexture *tex;
             uint32_t w;
             uint32_t h;
             uint32_t refcount;
@@ -55,11 +55,11 @@ extern "C"
        Public API
        ----------------------------------------------------------------------------- */
 
-    bool BH_TextureManager_Init(BH_TextureManager *tm, SDL_GPUDevice *device, BH_Arena *permanent_arena);
+    bool BH_TextureManager_Init(BH_TextureManager *tm, BH_GPUDevice *device, BH_Arena *permanent_arena);
     void BH_TextureManager_Shutdown(BH_TextureManager *tm);
 
-    SDL_GPUSampler *BH_TextureManager_GetSampler(const BH_TextureManager *tm);
-    SDL_GPUTexture *BH_TextureManager_GetGPUTexture(const BH_TextureManager *tm, BH_TextureHandle handle);
+    BH_GPUSampler *BH_TextureManager_GetSampler(const BH_TextureManager *tm);
+    BH_GPUTexture *BH_TextureManager_GetGPUTexture(const BH_TextureManager *tm, BH_TextureHandle handle);
 
     /* Loads PNG from disk. Returns cached handle if path matches. */
     BH_TextureHandle BH_TextureManager_LoadTexture(BH_TextureManager *tm, const char *asset_root, const char *rel_path,
@@ -72,7 +72,7 @@ extern "C"
 
     /* Registers external texture. Optional ownership transfer. */
     BH_TextureHandle BH_TextureManager_RegisterExternalTexture(BH_TextureManager *tm, const char *debug_name,
-                                                               SDL_GPUTexture *tex, uint32_t w, uint32_t h, bool srgb,
+                                                               BH_GPUTexture *tex, uint32_t w, uint32_t h, bool srgb,
                                                                bool take_ownership);
 
     /* Decrements refcount; releases slot/texture at 0. */

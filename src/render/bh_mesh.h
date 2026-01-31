@@ -7,7 +7,7 @@
 #include "../core/bh_core.h"
 #include "../math/bh_math.h"
 
-#include <SDL3/SDL_gpu.h>
+#include "bh_gpu.h"
 
 struct BH_Material;
 
@@ -28,12 +28,12 @@ typedef struct BH_Submesh
 
 typedef struct BH_Mesh
 {
-    SDL_GPUBuffer *vertex_buffer;
-    SDL_GPUBuffer *index_buffer;
+    BH_GPUBuffer *vertex_buffer;
+    BH_GPUBuffer *index_buffer;
 
     uint32_t vertex_count;
     uint32_t index_count;
-    SDL_GPUIndexElementSize index_element_size;
+    BH_GPUIndexElementSize index_element_size;
 
     BH_Submesh *submeshes;
     uint32_t submesh_count;
@@ -43,7 +43,7 @@ typedef struct BH_Mesh
    Public API
    ----------------------------------------------------------------------------- */
 
-bool BH_Mesh_CreateCube(BH_Mesh *out_mesh, SDL_GPUDevice *device, BH_Arena *permanent_arena,
+bool BH_Mesh_CreateCube(BH_Mesh *out_mesh, BH_GPUDevice *device, BH_Arena *permanent_arena,
                         float half_extent_hammer_units, const struct BH_Material *mat_a,
                         const struct BH_Material *mat_b);
 
@@ -52,7 +52,7 @@ Creates mesh from a raw triangle list.
 Vertices uploaded as-is. Generates linear index buffer (0..N).
 Creates single submesh.
 */
-bool BH_Mesh_CreateTriangleList(BH_Mesh *out_mesh, SDL_GPUDevice *device, BH_Arena *arena, const BH_Vertex *vertices,
+bool BH_Mesh_CreateTriangleList(BH_Mesh *out_mesh, BH_GPUDevice *device, BH_Arena *arena, const BH_Vertex *vertices,
                                 uint32_t vertex_count, const struct BH_Material *material);
 
-void BH_Mesh_Release(BH_Mesh *mesh, SDL_GPUDevice *device);
+void BH_Mesh_Release(BH_Mesh *mesh, BH_GPUDevice *device);
