@@ -26,6 +26,20 @@ OpenBHOP is an open source game engine which faithfully re-creates bunnyhopping 
 - [x]  Stamina (optional)
 - [ ]  Push, teleport, gravity triggers
 
+## Platform TODO
+
+- [x]  Windows
+- [x]  Web
+- [ ]  Linux
+- [ ]  Android
+- [ ]  Mac
+
+## Input TODO
+
+- [x] Keyboard/mouse
+- [ ] Controller
+- [ ] Tablet and phone
+
 ## Movement authenticity
 
 When all movement mechanics are complete, we'll do a side-by-side comparison to CS:S.  Run the same inputs and compare the outputs, to prove that movement in OpenBHOP is authentic for speedrunning.
@@ -50,28 +64,41 @@ BSP support is in early stages.  OpenBHOP has a proprietary map format (.cmap) f
 * **C++ Compiler** (supporting C++17)
 * **DXC (DirectX Shader Compiler)**: Must be installed and available in your system `PATH`.
 
-### Build Steps
+### Desktop build Steps
 
-Run the following commands in your terminal:
-
-```bash
-# 1. Clone the repository recursively to fetch SDL3 and RmlUi
+```
+# 1. Clone recursively
 git clone --recursive https://github.com/openbhop/OpenBHOP.git
 cd OpenBHOP
 
-# 2. Generate project files (Visual Studio, Makefiles, etc.)
+# 2. Generate project files
 cmake -B build
 
 # 3. Build the project
 cmake --build build --config Release
 
+# 4. Double click build/release/bh.exe
 ```
 
-### Running the App
+### Web build steps, requires an emsdk-enabled shell
 
-* **Windows:** Executables, DLLs, and assets are automatically copied to `build/Release` (or `build/Debug`).
-* **Shaders:** Shaders are automatically compiled using `dxc` and reflected during the build process.
+```
+# 1. Clone recursively
+git clone --recursive https://github.com/openbhop/OpenBHOP.git
+cd OpenBHOP
 
+# 2. Generate project files
+emcmake cmake -S . -B build-web -G Ninja
+
+# 3. Build the project
+cmake --build build-web
+
+# 4. To run
+cd build-web
+python3 -m http.server 8000
+
+# visit http://localhost:8000 in a browser
+```
 ## Contributing
 
 OpenBHOP is a community project with a shared passion for bunnyhop, we welcome contributions from anybody.
