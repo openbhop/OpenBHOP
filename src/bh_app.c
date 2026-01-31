@@ -307,13 +307,43 @@ bool BH_App_Tick(BH_App *app)
 #ifndef __EMSCRIPTEN__
     if (app->timing_target_ns > 0.0)
     {
-        const uint64_t frame_end_ticks = SDL_GetPerformanceCounter();
-        const uint64_t elapsed_ticks = frame_end_ticks - frame_start_ticks;
-        const double elapsed_ns = ((double)elapsed_ticks / (double)app->timing_freq) * 1e9;
+        uint64_t frame_end_ticks = SDL_GetPerformanceCounter();
+        uint64_t elapsed_ticks = frame_end_ticks - frame_start_ticks;
+        double elapsed_ns = ((double)elapsed_ticks / (double)app->timing_freq) * 1e9;
 
         if (elapsed_ns < app->timing_target_ns)
         {
-            // SDL_DelayNS((uint64_t)(app->timing_target_ns - elapsed_ns));
+            const double remaining_ns = app->timing_target_ns - elapsed_ns;
+
+            // 2. SLEEP BUFFER
+            // We only sleep if we have more than 2ms remaining.
+            // For 900 FPS (1.1ms total frame time), this ensures we NEVER call SDL_DelayNS,
+            // effectively forcing a pure spin-loop which is required for >500 FPS precision.
+            const double sleep_buffer_ns = 2000000.0; // 2ms
+
+            if (remaining_ns > sleep_buffer_ns)
+            {
+                // Sleep until we are 2ms away from the target
+                SDL_DelayNS((uint64_t)(remaining_ns - sleep_buffer_ns));
+            }
+
+            // 3. SPIN LOCK
+            // Busy-wait for the final precision.
+            while (true)
+            {
+                frame_end_ticks = SDL_GetPerformanceCounter();
+                elapsed_ticks = frame_end_ticks - frame_start_ticks;
+                elapsed_ns = ((double)elapsed_ticks / (double)app->timing_freq) * 1e9;
+
+                if (elapsed_ns >= app->timing_target_ns)
+                {
+                    break;
+                }
+
+                // Relax the CPU pipeline to save power/heat while spinning
+                // (Available in SDL3 headers)
+                SDL_CPUPauseInstruction();
+            }
         }
     }
 #endif

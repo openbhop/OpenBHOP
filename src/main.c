@@ -7,13 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// -----------------------------------------------------------------------------
-// Graphics backend selection
-// -----------------------------------------------------------------------------
-// Toggle the default GPU backend in this one place.
-//
-// 1 = OpenGL backend (desktop)
-// 0 = SDL_gpu backend
 #ifndef BH_USE_OPENGL_BACKEND
 #define BH_USE_OPENGL_BACKEND 0
 #endif
@@ -111,11 +104,12 @@ int main(int argc, char **argv)
 #endif
 
     BH_AppConfig cfg = {0};
-    cfg.num_windows = (argc >= 2) ? (int)BH_Parse_Int32Clamp(argv[1], 1, 1, 8) : 1;
+    cfg.num_windows = 1;
     cfg.window_width = 1280;
     cfg.window_height = 720;
     cfg.fixed_dt = 1.0 / 100.0; // tickrate
     cfg.debug_gpu = false;
+    cfg.target_fps = 900;
 
     BH_App app;
     if (!BH_App_Init(&app, &cfg))

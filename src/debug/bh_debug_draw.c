@@ -3,9 +3,9 @@
    ----------------------------------------------------------------------------- */
 
 #include "bh_debug_draw.h"
+#include "bh_debug_draw_internal.h"
 
-#include "../render/bh_material.h"
-#include "../render/bh_renderer.h"
+#include "../render/bh_dbg_prims.h"
 
 #include <SDL3/SDL.h>
 #include <float.h>
@@ -13,10 +13,6 @@
 #include <string.h>
 
 static BH_DebugDraw *g_dbg_active = NULL;
-
-/* -----------------------------------------------------------------------------
-   Internal Helpers
-   ----------------------------------------------------------------------------- */
 
 static inline BH_DbgState *bh_dbg_state(BH_DebugDraw *dd)
 {
@@ -106,99 +102,6 @@ static bool bh_dbg_reserve_vertices(BH_DbgVertex **ptr, uint32_t *cap, uint32_t 
     return true;
 }
 
-static bool bh_dbg_pending_push_tbuf(BH_DebugDraw *dd, BH_GPUTransferBuffer *tbuf)
-{
-    if (dd->pending_tbuf_count >= dd->pending_tbuf_cap)
-    {
-        uint32_t new_cap = dd->pending_tbuf_cap ? dd->pending_tbuf_cap * 2 : 16;
-        BH_GPUTransferBuffer **new_mem =
-            (BH_GPUTransferBuffer **)SDL_realloc(dd->pending_tbufs, (size_t)new_cap * sizeof(BH_GPUTransferBuffer *));
-        if (!new_mem)
-        {
-            return false;
-        }
-        dd->pending_tbufs = new_mem;
-        dd->pending_tbuf_cap = new_cap;
-    }
-
-    dd->pending_tbufs[dd->pending_tbuf_count++] = tbuf;
-    return true;
-}
-
-/* Keep a tiny backend-agnostic blend description here.
-   Shader program/pipeline creation is still SDL_gpu-backed for now, so we convert at the call site. */
-typedef enum BH_DbgBlendFactor
-{
-    BH_DBG_BLENDFACTOR_ONE = 0,
-    BH_DBG_BLENDFACTOR_SRC_ALPHA = 1,
-    BH_DBG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA = 2,
-} BH_DbgBlendFactor;
-
-typedef enum BH_DbgBlendOp
-{
-    BH_DBG_BLENDOP_ADD = 0,
-} BH_DbgBlendOp;
-
-typedef struct BH_DbgBlendState
-{
-    bool enable_blend;
-    BH_DbgBlendOp color_blend_op;
-    BH_DbgBlendOp alpha_blend_op;
-    BH_DbgBlendFactor src_color;
-    BH_DbgBlendFactor dst_color;
-    BH_DbgBlendFactor src_alpha;
-    BH_DbgBlendFactor dst_alpha;
-    bool enable_color_write_mask;
-} BH_DbgBlendState;
-
-static BH_DbgBlendState bh_dbg_alpha_blend_state(void)
-{
-    return (BH_DbgBlendState){
-        .enable_blend = true,
-        .color_blend_op = BH_DBG_BLENDOP_ADD,
-        .alpha_blend_op = BH_DBG_BLENDOP_ADD,
-        .src_color = BH_DBG_BLENDFACTOR_SRC_ALPHA,
-        .dst_color = BH_DBG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-        .src_alpha = BH_DBG_BLENDFACTOR_ONE,
-        .dst_alpha = BH_DBG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-        .enable_color_write_mask = false,
-    };
-}
-
-static BH_GPUBlendFactor bh_dbg_to_gpu_blend_factor(BH_DbgBlendFactor f)
-{
-    switch (f)
-    {
-    case BH_DBG_BLENDFACTOR_SRC_ALPHA:
-        return BH_GPU_BLENDFACTOR_SRC_ALPHA;
-    case BH_DBG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA:
-        return BH_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-    case BH_DBG_BLENDFACTOR_ONE:
-    default:
-        return BH_GPU_BLENDFACTOR_ONE;
-    }
-}
-
-static BH_GPUBlendOp bh_dbg_to_gpu_blend_op(BH_DbgBlendOp op)
-{
-    (void)op;
-    return BH_GPU_BLENDOP_ADD;
-}
-
-static BH_GPUColorTargetBlendState bh_dbg_to_gpu_blend_state(BH_DbgBlendState st)
-{
-    return (BH_GPUColorTargetBlendState){
-        .enable_blend = st.enable_blend,
-        .color_blend_op = bh_dbg_to_gpu_blend_op(st.color_blend_op),
-        .alpha_blend_op = bh_dbg_to_gpu_blend_op(st.alpha_blend_op),
-        .src_color_blendfactor = bh_dbg_to_gpu_blend_factor(st.src_color),
-        .dst_color_blendfactor = bh_dbg_to_gpu_blend_factor(st.dst_color),
-        .src_alpha_blendfactor = bh_dbg_to_gpu_blend_factor(st.src_alpha),
-        .dst_alpha_blendfactor = bh_dbg_to_gpu_blend_factor(st.dst_alpha),
-        .enable_color_write_mask = st.enable_color_write_mask,
-    };
-}
-
 static void bh_dbg_add_line_internal(BH_DebugDraw *dd, vec3 a, vec3 b, color4f color, float duration_s)
 {
     if (!bh_dbg_reserve_lines(dd, 1))
@@ -285,8 +188,8 @@ static void bh_dbg_rebuild_vertices(BH_DebugDraw *dd)
         const BH_DbgLine *ln = &dd->lines[i];
         const bool always = (ln->depth == BH_DBG_DEPTH_ALWAYS);
 
-        BH_DbgVertex *dst =
-            always ? &dd->cpu_line_always[dd->line_always_vert_count] : &dd->cpu_line_depth[dd->line_depth_vert_count];
+        BH_DbgVertex *dst = always ? &dd->cpu_line_always[dd->line_always_vert_count]
+                                   : &dd->cpu_line_depth[dd->line_depth_vert_count];
 
         dst[0] = (BH_DbgVertex){.position = ln->a, .color = ln->color};
         dst[1] = (BH_DbgVertex){.position = ln->b, .color = ln->color};
@@ -306,8 +209,8 @@ static void bh_dbg_rebuild_vertices(BH_DebugDraw *dd)
         const BH_DbgTri *tr = &dd->tris[i];
         const bool always = (tr->depth == BH_DBG_DEPTH_ALWAYS);
 
-        BH_DbgVertex *dst =
-            always ? &dd->cpu_tri_always[dd->tri_always_vert_count] : &dd->cpu_tri_depth[dd->tri_depth_vert_count];
+        BH_DbgVertex *dst = always ? &dd->cpu_tri_always[dd->tri_always_vert_count]
+                                   : &dd->cpu_tri_depth[dd->tri_depth_vert_count];
 
         dst[0] = (BH_DbgVertex){.position = tr->a, .color = tr->color};
         dst[1] = (BH_DbgVertex){.position = tr->b, .color = tr->color};
@@ -324,337 +227,56 @@ static void bh_dbg_rebuild_vertices(BH_DebugDraw *dd)
     }
 }
 
-static BH_GPUBuffer *bh_dbg_ensure_vb(BH_DebugDraw *dd, BH_GPUBuffer *vb, uint32_t *vb_bytes, uint32_t needed_bytes)
+void BH_DebugDraw_GetBatches(BH_DebugDraw *dd, BH_DbgBatches *out)
 {
-    if (needed_bytes == 0)
-    {
-        return vb;
-    }
-
-    if (vb && *vb_bytes >= needed_bytes)
-    {
-        return vb;
-    }
-
-    if (vb)
-    {
-        BH_GPU_ReleaseBuffer(dd->device, vb);
-        vb = NULL;
-    }
-
-    uint32_t alloc_bytes = 4096;
-    while (alloc_bytes < needed_bytes)
-    {
-        alloc_bytes *= 2;
-    }
-
-    BH_GPUBufferCreateInfo bci = {0};
-    bci.usage = BH_GPU_BUFFERUSAGE_VERTEX;
-    bci.size = alloc_bytes;
-
-    vb = BH_GPU_CreateBuffer(dd->device, &bci);
-    if (!vb)
-    {
-        SDL_Log("[bh][dbg] BH_GPU_CreateBuffer failed: %s", BH_GPU_GetLastError());
-        *vb_bytes = 0;
-        return NULL;
-    }
-
-    *vb_bytes = alloc_bytes;
-    return vb;
-}
-
-static bool bh_dbg_upload_vertices(BH_DebugDraw *dd, BH_GPUCopyPass *copy_pass, BH_GPUBuffer *dst_buffer,
-                                   const BH_DbgVertex *src, uint32_t vertex_count)
-{
-    if (!dst_buffer || !src || vertex_count == 0)
-    {
-        return true;
-    }
-
-    const uint32_t size = vertex_count * (uint32_t)sizeof(BH_DbgVertex);
-
-    BH_GPUTransferBufferCreateInfo tci = {0};
-    tci.usage = BH_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-    tci.size = size;
-
-    BH_GPUTransferBuffer *tbuf = BH_GPU_CreateTransferBuffer(dd->device, &tci);
-    if (!tbuf)
-    {
-        SDL_Log("[bh][dbg] BH_GPU_CreateTransferBuffer failed: %s", BH_GPU_GetLastError());
-        return false;
-    }
-
-    void *mapped = BH_GPU_MapTransferBuffer(dd->device, tbuf, false);
-    if (!mapped)
-    {
-        SDL_Log("[bh][dbg] BH_GPU_MapTransferBuffer failed: %s", BH_GPU_GetLastError());
-        BH_GPU_ReleaseTransferBuffer(dd->device, tbuf);
-        return false;
-    }
-
-    memcpy(mapped, src, size);
-    BH_GPU_UnmapTransferBuffer(dd->device, tbuf);
-
-    BH_GPUTransferBufferLocation src_loc = {.transfer_buffer = tbuf, .offset = 0};
-    BH_GPUBufferRegion dst = {.buffer = dst_buffer, .offset = 0, .size = size};
-    BH_GPU_UploadToBuffer(copy_pass, &src_loc, &dst, false);
-
-    if (!bh_dbg_pending_push_tbuf(dd, tbuf))
-    {
-        BH_GPU_ReleaseTransferBuffer(dd->device, tbuf);
-        return false;
-    }
-    return true;
-}
-
-static void bh_dbg_prepare_cb(void *user, BH_GPUCommandBuffer *cmd, BH_GPUCopyPass *copy_pass, const mat4 *view_proj,
-                              uint32_t fb_width, uint32_t fb_height, float alpha)
-{
-    (void)cmd;
-    (void)view_proj;
-    (void)fb_width;
-    (void)fb_height;
-    (void)alpha;
-
-    BH_DebugDraw *dd = (BH_DebugDraw *)user;
-    if (!dd || !dd->dirty)
+    if (!out)
     {
         return;
     }
 
-    bh_dbg_rebuild_vertices(dd);
+    *out = (BH_DbgBatches){0};
 
-    const uint32_t line_depth_bytes = dd->line_depth_vert_count * (uint32_t)sizeof(BH_DbgVertex);
-    const uint32_t line_always_bytes = dd->line_always_vert_count * (uint32_t)sizeof(BH_DbgVertex);
-    const uint32_t tri_depth_bytes = dd->tri_depth_vert_count * (uint32_t)sizeof(BH_DbgVertex);
-    const uint32_t tri_always_bytes = dd->tri_always_vert_count * (uint32_t)sizeof(BH_DbgVertex);
-
-    dd->vb_line_depth = bh_dbg_ensure_vb(dd, dd->vb_line_depth, &dd->vb_line_depth_bytes, line_depth_bytes);
-    dd->vb_line_always = bh_dbg_ensure_vb(dd, dd->vb_line_always, &dd->vb_line_always_bytes, line_always_bytes);
-    dd->vb_tri_depth = bh_dbg_ensure_vb(dd, dd->vb_tri_depth, &dd->vb_tri_depth_bytes, tri_depth_bytes);
-    dd->vb_tri_always = bh_dbg_ensure_vb(dd, dd->vb_tri_always, &dd->vb_tri_always_bytes, tri_always_bytes);
-
-    (void)bh_dbg_upload_vertices(dd, copy_pass, dd->vb_line_depth, dd->cpu_line_depth, dd->line_depth_vert_count);
-    (void)bh_dbg_upload_vertices(dd, copy_pass, dd->vb_line_always, dd->cpu_line_always, dd->line_always_vert_count);
-    (void)bh_dbg_upload_vertices(dd, copy_pass, dd->vb_tri_depth, dd->cpu_tri_depth, dd->tri_depth_vert_count);
-    (void)bh_dbg_upload_vertices(dd, copy_pass, dd->vb_tri_always, dd->cpu_tri_always, dd->tri_always_vert_count);
-
-    dd->dirty = false;
-}
-
-static void bh_dbg_draw_one(BH_DebugDraw *dd, BH_ShaderProgram *prog, BH_GPUCommandBuffer *cmd,
-                            BH_GPURenderPass *pass, BH_GPUBuffer *vb, uint32_t vert_count, const mat4 *view_proj)
-{
-    if (vert_count == 0)
-    {
-        return;
-    }
-
-    BH_GPU_BindGraphicsPipeline(pass, prog->pipeline);
-    const BH_GPUBufferBinding binding = {.buffer = vb, .offset = 0};
-    BH_GPU_BindVertexBuffers(pass, 0, &binding, 1);
-
-    const BH_UniformBufferReflection *per_draw_ub =
-        (prog->vs_refl.uniform_buffer_count > 0) ? &prog->vs_refl.uniform_buffers[0] : NULL;
-    const uint32_t per_draw_slot = per_draw_ub ? per_draw_ub->slot : 0;
-    const uint32_t per_draw_size = per_draw_ub ? per_draw_ub->size_bytes : 0;
-
-    uint8_t per_draw_storage[256] = {0};
-    if (per_draw_size == 0 || per_draw_size > (uint32_t)sizeof(per_draw_storage))
-    {
-        return;
-    }
-
-    BH_ParamBlock per_draw = {0};
-    (void)BH_ParamBlock_InitSingleSlot(&per_draw, &prog->vs_refl, per_draw_slot, per_draw_storage, per_draw_size);
-
-    if (!BH_ParamBlock_SetMat4(&per_draw, "u_MVP", view_proj) && !dd->logged_missing_mvp)
-    {
-        SDL_Log("[bh][dbg] Failed to set u_MVP. Reflection JSON may be out of date.");
-        dd->logged_missing_mvp = true;
-    }
-
-    BH_ParamBlock_PushUniforms(&per_draw, cmd);
-    BH_GPU_DrawPrimitives(pass, vert_count, 1, 0, 0);
-}
-
-static void bh_dbg_draw_cb(void *user, BH_GPUCommandBuffer *cmd, BH_GPURenderPass *render_pass, const mat4 *view_proj,
-                           uint32_t fb_width, uint32_t fb_height, float alpha)
-{
-    (void)fb_width;
-    (void)fb_height;
-    (void)alpha;
-
-    BH_DebugDraw *dd = (BH_DebugDraw *)user;
     if (!dd)
     {
         return;
     }
 
-    /* Triangles first (opaque-ish), then lines (wireframe) */
-    if (dd->tri_depth_vert_count > 0 && dd->vb_tri_depth)
+    if (dd->dirty)
     {
-        bh_dbg_draw_one(dd, &dd->tri_depth, cmd, render_pass, dd->vb_tri_depth, dd->tri_depth_vert_count, view_proj);
-    }
-    if (dd->tri_always_vert_count > 0 && dd->vb_tri_always)
-    {
-        bh_dbg_draw_one(dd, &dd->tri_always, cmd, render_pass, dd->vb_tri_always, dd->tri_always_vert_count, view_proj);
+        bh_dbg_rebuild_vertices(dd);
+        dd->dirty = false;
     }
 
-    if (dd->line_depth_vert_count > 0 && dd->vb_line_depth)
-    {
-        bh_dbg_draw_one(dd, &dd->line_depth, cmd, render_pass, dd->vb_line_depth, dd->line_depth_vert_count, view_proj);
-    }
-    if (dd->line_always_vert_count > 0 && dd->vb_line_always)
-    {
-        bh_dbg_draw_one(dd, &dd->line_always, cmd, render_pass, dd->vb_line_always, dd->line_always_vert_count,
-                        view_proj);
-    }
+    out->line_depth = dd->cpu_line_depth;
+    out->line_depth_count = dd->line_depth_vert_count;
+
+    out->line_always = dd->cpu_line_always;
+    out->line_always_count = dd->line_always_vert_count;
+
+    out->tri_depth = dd->cpu_tri_depth;
+    out->tri_depth_count = dd->tri_depth_vert_count;
+
+    out->tri_always = dd->cpu_tri_always;
+    out->tri_always_count = dd->tri_always_vert_count;
 }
-
-static void bh_dbg_end_frame_cb(void *user, bool submit_ok)
-{
-    (void)submit_ok;
-
-    BH_DebugDraw *dd = (BH_DebugDraw *)user;
-    if (!dd)
-    {
-        return;
-    }
-
-    for (uint32_t i = 0; i < dd->pending_tbuf_count; ++i)
-    {
-        if (dd->pending_tbufs[i])
-        {
-            BH_GPU_ReleaseTransferBuffer(dd->device, dd->pending_tbufs[i]);
-        }
-    }
-    dd->pending_tbuf_count = 0;
-}
-
-/* -----------------------------------------------------------------------------
-   Init / Shutdown
-   ----------------------------------------------------------------------------- */
 
 bool BH_DebugDraw_Init(BH_DebugDraw *dd, BH_Renderer *renderer, const char *asset_root, BH_Arena *permanent_arena)
 {
-    if (!dd || !renderer || !renderer->device || !asset_root || !permanent_arena)
+    if (!dd || !renderer || !asset_root || !permanent_arena)
     {
         return false;
     }
 
     *dd = (BH_DebugDraw){0};
-    dd->device = renderer->device;
     dd->dirty = true;
     dd->state_top = 1;
     dd->state_stack[0].depth = BH_DBG_DEPTH_TEST;
     dd->state_stack[0].default_color = BH_COLOR_WHITE;
 
-    BH_GPUVertexAttribute attrs[2] = {
-        {.location = 0,
-         .buffer_slot = 0,
-         .format = BH_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-         .offset = (uint32_t)offsetof(BH_DbgVertex, position)},
-        {.location = 1,
-         .buffer_slot = 0,
-         .format = BH_GPU_VERTEXELEMENTFORMAT_FLOAT4,
-         .offset = (uint32_t)offsetof(BH_DbgVertex, color)},
-    };
-
-    BH_GPUVertexBufferDescription vb_desc = {
-        .slot = 0,
-        .pitch = (uint32_t)sizeof(BH_DbgVertex),
-        .input_rate = BH_GPU_VERTEXINPUTRATE_VERTEX,
-        .instance_step_rate = 0,
-    };
-
-    BH_GPUVertexInputState vi = {
-        .vertex_buffer_descriptions = &vb_desc,
-        .num_vertex_buffers = 1,
-        .vertex_attributes = attrs,
-        .num_vertex_attributes = 2,
-    };
-
-    const bool use_gl = (SDL_strcasecmp(BH_GPU_GetBackend()->name, "OpenGL") == 0);
-
-    char vs_spv[1024], vs_json[1024], fs_spv[1024], fs_json[1024];
-    SDL_snprintf(vs_spv, sizeof(vs_spv), "%s/shaders/%s/debug_prim.vert.%s", asset_root, use_gl ? "gl" : "compiled",
-                 use_gl ? "glsl" : "spv");
-    SDL_snprintf(vs_json, sizeof(vs_json), "%s/shaders/compiled/debug_prim.vert.json", asset_root);
-    SDL_snprintf(fs_spv, sizeof(fs_spv), "%s/shaders/%s/debug_prim.frag.%s", asset_root, use_gl ? "gl" : "compiled",
-                 use_gl ? "glsl" : "spv");
-    SDL_snprintf(fs_json, sizeof(fs_json), "%s/shaders/compiled/debug_prim.frag.json", asset_root);
-
-    BH_ShaderProgramPipelineConfig pcfg = {
-        .vertex_input = vi,
-        .rasterizer_state = {.fill_mode = BH_GPU_FILLMODE_FILL,
-                             .cull_mode = BH_GPU_CULLMODE_NONE,
-                             .front_face = BH_GPU_FRONTFACE_COUNTER_CLOCKWISE},
-        .multisample_state.sample_count = BH_GPU_SAMPLECOUNT_1,
-        .depth_stencil_state = {.enable_depth_write = false, .compare_op = BH_GPU_COMPAREOP_LESS_OR_EQUAL},
-        .blend_state = bh_dbg_to_gpu_blend_state(bh_dbg_alpha_blend_state()),
-        .has_depth_stencil_target = true,
-    };
-
-    /* Depth-tested lines */
-    pcfg.primitive_type = BH_GPU_PRIMITIVETYPE_LINELIST;
-    pcfg.depth_stencil_state.enable_depth_test = true;
-    if (!BH_ShaderProgram_LoadEx(&dd->line_depth, renderer->device, vs_spv, vs_json, fs_spv, fs_json,
-                                 renderer->swapchain_format,
-                                 renderer->depth_format, &pcfg, permanent_arena))
+    if (!BH_DbgPrims_Attach(dd, renderer, asset_root, permanent_arena))
     {
-        SDL_Log("[bh][dbg] Failed to load debug line_depth program");
         BH_DebugDraw_Shutdown(dd);
         return false;
-    }
-
-    /* Always-draw lines */
-    pcfg.primitive_type = BH_GPU_PRIMITIVETYPE_LINELIST;
-    pcfg.depth_stencil_state.enable_depth_test = false;
-    if (!BH_ShaderProgram_LoadEx(&dd->line_always, renderer->device, vs_spv, vs_json, fs_spv, fs_json,
-                                 renderer->swapchain_format,
-                                 renderer->depth_format, &pcfg, permanent_arena))
-    {
-        SDL_Log("[bh][dbg] Failed to load debug line_always program");
-        BH_DebugDraw_Shutdown(dd);
-        return false;
-    }
-
-    /* Depth-tested triangles */
-    pcfg.primitive_type = BH_GPU_PRIMITIVETYPE_TRIANGLELIST;
-    pcfg.depth_stencil_state.enable_depth_test = true;
-    if (!BH_ShaderProgram_LoadEx(&dd->tri_depth, renderer->device, vs_spv, vs_json, fs_spv, fs_json,
-                                 renderer->swapchain_format,
-                                 renderer->depth_format, &pcfg, permanent_arena))
-    {
-        SDL_Log("[bh][dbg] Failed to load debug tri_depth program");
-        BH_DebugDraw_Shutdown(dd);
-        return false;
-    }
-
-    /* Always-draw triangles */
-    pcfg.primitive_type = BH_GPU_PRIMITIVETYPE_TRIANGLELIST;
-    pcfg.depth_stencil_state.enable_depth_test = false;
-    if (!BH_ShaderProgram_LoadEx(&dd->tri_always, renderer->device, vs_spv, vs_json, fs_spv, fs_json,
-                                 renderer->swapchain_format,
-                                 renderer->depth_format, &pcfg, permanent_arena))
-    {
-        SDL_Log("[bh][dbg] Failed to load debug tri_always program");
-        BH_DebugDraw_Shutdown(dd);
-        return false;
-    }
-
-    BH_RenderPassHooks hk = {
-        .prepare = bh_dbg_prepare_cb,
-        .draw = bh_dbg_draw_cb,
-        .end_frame = bh_dbg_end_frame_cb,
-        .user = dd,
-    };
-
-    if (!BH_Renderer_AddHooks(renderer, hk))
-    {
-        SDL_Log("[bh][dbg] Failed to register renderer hook; debug drawing will be disabled");
     }
 
     return true;
@@ -672,32 +294,8 @@ void BH_DebugDraw_Shutdown(BH_DebugDraw *dd)
         g_dbg_active = NULL;
     }
 
-    if (dd->device)
-    {
-        if (dd->vb_line_depth)
-            BH_GPU_ReleaseBuffer(dd->device, dd->vb_line_depth);
-        if (dd->vb_line_always)
-            BH_GPU_ReleaseBuffer(dd->device, dd->vb_line_always);
-        if (dd->vb_tri_depth)
-            BH_GPU_ReleaseBuffer(dd->device, dd->vb_tri_depth);
-        if (dd->vb_tri_always)
-            BH_GPU_ReleaseBuffer(dd->device, dd->vb_tri_always);
+    BH_DbgPrims_Detach(dd);
 
-        BH_ShaderProgram_Release(&dd->line_depth, dd->device);
-        BH_ShaderProgram_Release(&dd->line_always, dd->device);
-        BH_ShaderProgram_Release(&dd->tri_depth, dd->device);
-        BH_ShaderProgram_Release(&dd->tri_always, dd->device);
-
-        for (uint32_t i = 0; i < dd->pending_tbuf_count; ++i)
-        {
-            if (dd->pending_tbufs[i])
-            {
-                BH_GPU_ReleaseTransferBuffer(dd->device, dd->pending_tbufs[i]);
-            }
-        }
-    }
-
-    SDL_free(dd->pending_tbufs);
     SDL_free(dd->lines);
     SDL_free(dd->tris);
 
@@ -771,10 +369,6 @@ BH_DebugDraw *BH_DebugDraw_GetActive(void)
     return g_dbg_active;
 }
 
-/* -----------------------------------------------------------------------------
-   State Management
-   ----------------------------------------------------------------------------- */
-
 void BH_DebugDraw_Push(void)
 {
     BH_DebugDraw *dd = BH_DebugDraw_GetActive();
@@ -829,10 +423,6 @@ color4f BH_DebugDraw_GetDefaultColor(void)
     return dd ? bh_dbg_state(dd)->default_color : BH_COLOR_WHITE;
 }
 
-/* -----------------------------------------------------------------------------
-   Public Drawing API
-   ----------------------------------------------------------------------------- */
-
 void BH_DebugDraw_DrawLine(vec3 a, vec3 b, color4f color, float duration_s)
 {
     BH_DebugDraw *dd = BH_DebugDraw_GetActive();
@@ -859,32 +449,37 @@ void BH_DebugDraw_DrawGrid(vec3 origin, float size_x, float size_y, float cell_s
         return;
     }
 
-    const float half_x = size_x * 0.5f;
-    const float half_y = size_y * 0.5f;
-    const uint32_t cells_x = (uint32_t)(size_x / cell_size);
-    const uint32_t cells_y = (uint32_t)(size_y / cell_size);
-
-    /* X-parallel lines */
-    for (uint32_t y = 0; y <= cells_y; ++y)
+    if (color.a == 0.0f)
     {
-        const float fy = -half_y + (float)y * cell_size;
-        bh_dbg_add_line_internal(dd, (vec3){origin.x - half_x, origin.y + fy, origin.z},
-                                 (vec3){origin.x + half_x, origin.y + fy, origin.z}, color, duration_s);
+        color = BH_DebugDraw_GetDefaultColor();
     }
 
-    /* Y-parallel lines */
-    for (uint32_t x = 0; x <= cells_x; ++x)
+    const int nx = (int)(size_x / cell_size);
+    const int ny = (int)(size_y / cell_size);
+    const float half_x = 0.5f * size_x;
+    const float half_y = 0.5f * size_y;
+
+    for (int ix = 0; ix <= nx; ++ix)
     {
-        const float fx = -half_x + (float)x * cell_size;
-        bh_dbg_add_line_internal(dd, (vec3){origin.x + fx, origin.y - half_y, origin.z},
-                                 (vec3){origin.x + fx, origin.y + half_y, origin.z}, color, duration_s);
+        const float x = origin.x - half_x + (float)ix * cell_size;
+        const vec3 a = {x, origin.y - half_y, origin.z};
+        const vec3 b = {x, origin.y + half_y, origin.z};
+        bh_dbg_add_line_internal(dd, a, b, color, duration_s);
+    }
+
+    for (int iy = 0; iy <= ny; ++iy)
+    {
+        const float y = origin.y - half_y + (float)iy * cell_size;
+        const vec3 a = {origin.x - half_x, y, origin.z};
+        const vec3 b = {origin.x + half_x, y, origin.z};
+        bh_dbg_add_line_internal(dd, a, b, color, duration_s);
     }
 }
 
 void BH_DebugDraw_DrawBounds(vec3 mins, vec3 maxs, color4f color, float duration_s)
 {
-    const vec3 center = {(mins.x + maxs.x) * 0.5f, (mins.y + maxs.y) * 0.5f, (mins.z + maxs.z) * 0.5f};
-    const vec3 half_ext = {(maxs.x - mins.x) * 0.5f, (maxs.y - mins.y) * 0.5f, (maxs.z - mins.z) * 0.5f};
+    vec3 center = vec3_scale(vec3_add(mins, maxs), 0.5f);
+    vec3 half_ext = vec3_scale(vec3_sub(maxs, mins), 0.5f);
     BH_DebugDraw_DrawWireCuboid(center, half_ext, color, duration_s);
 }
 
@@ -906,31 +501,34 @@ void BH_DebugDraw_DrawWireCuboid(vec3 center, vec3 half_extents, color4f color, 
         return;
     }
 
-    const vec3 c = center;
-    const vec3 e = half_extents;
+    if (color.a == 0.0f)
+    {
+        color = BH_DebugDraw_GetDefaultColor();
+    }
 
-    const vec3 p000 = {c.x - e.x, c.y - e.y, c.z - e.z};
-    const vec3 p001 = {c.x - e.x, c.y - e.y, c.z + e.z};
-    const vec3 p010 = {c.x - e.x, c.y + e.y, c.z - e.z};
-    const vec3 p011 = {c.x - e.x, c.y + e.y, c.z + e.z};
-    const vec3 p100 = {c.x + e.x, c.y - e.y, c.z - e.z};
-    const vec3 p101 = {c.x + e.x, c.y - e.y, c.z + e.z};
-    const vec3 p110 = {c.x + e.x, c.y + e.y, c.z - e.z};
-    const vec3 p111 = {c.x + e.x, c.y + e.y, c.z + e.z};
+    const vec3 mn = vec3_sub(center, half_extents);
+    const vec3 mx = vec3_add(center, half_extents);
 
-    /* Bottom Ring */
+    const vec3 p000 = {mn.x, mn.y, mn.z};
+    const vec3 p100 = {mx.x, mn.y, mn.z};
+    const vec3 p010 = {mn.x, mx.y, mn.z};
+    const vec3 p110 = {mx.x, mx.y, mn.z};
+
+    const vec3 p001 = {mn.x, mn.y, mx.z};
+    const vec3 p101 = {mx.x, mn.y, mx.z};
+    const vec3 p011 = {mn.x, mx.y, mx.z};
+    const vec3 p111 = {mx.x, mx.y, mx.z};
+
     bh_dbg_add_line_internal(dd, p000, p100, color, duration_s);
     bh_dbg_add_line_internal(dd, p100, p110, color, duration_s);
     bh_dbg_add_line_internal(dd, p110, p010, color, duration_s);
     bh_dbg_add_line_internal(dd, p010, p000, color, duration_s);
 
-    /* Top Ring */
     bh_dbg_add_line_internal(dd, p001, p101, color, duration_s);
     bh_dbg_add_line_internal(dd, p101, p111, color, duration_s);
     bh_dbg_add_line_internal(dd, p111, p011, color, duration_s);
     bh_dbg_add_line_internal(dd, p011, p001, color, duration_s);
 
-    /* Verticals */
     bh_dbg_add_line_internal(dd, p000, p001, color, duration_s);
     bh_dbg_add_line_internal(dd, p100, p101, color, duration_s);
     bh_dbg_add_line_internal(dd, p110, p111, color, duration_s);
@@ -945,34 +543,39 @@ void BH_DebugDraw_DrawCuboid(vec3 center, vec3 half_extents, color4f color, floa
         return;
     }
 
-    const vec3 c = center;
-    const vec3 e = half_extents;
+    if (color.a == 0.0f)
+    {
+        color = BH_DebugDraw_GetDefaultColor();
+    }
 
-    const vec3 p000 = {c.x - e.x, c.y - e.y, c.z - e.z};
-    const vec3 p001 = {c.x - e.x, c.y - e.y, c.z + e.z};
-    const vec3 p010 = {c.x - e.x, c.y + e.y, c.z - e.z};
-    const vec3 p011 = {c.x - e.x, c.y + e.y, c.z + e.z};
-    const vec3 p100 = {c.x + e.x, c.y - e.y, c.z - e.z};
-    const vec3 p101 = {c.x + e.x, c.y - e.y, c.z + e.z};
-    const vec3 p110 = {c.x + e.x, c.y + e.y, c.z - e.z};
-    const vec3 p111 = {c.x + e.x, c.y + e.y, c.z + e.z};
+    const vec3 mn = vec3_sub(center, half_extents);
+    const vec3 mx = vec3_add(center, half_extents);
 
-    /* -X */
-    bh_dbg_add_tri_internal(dd, p000, p001, p011, color, duration_s);
-    bh_dbg_add_tri_internal(dd, p000, p011, p010, color, duration_s);
-    /* +X */
-    bh_dbg_add_tri_internal(dd, p100, p110, p111, color, duration_s);
-    bh_dbg_add_tri_internal(dd, p100, p111, p101, color, duration_s);
-    /* -Y */
-    bh_dbg_add_tri_internal(dd, p000, p100, p101, color, duration_s);
-    bh_dbg_add_tri_internal(dd, p000, p101, p001, color, duration_s);
-    /* +Y */
-    bh_dbg_add_tri_internal(dd, p010, p011, p111, color, duration_s);
-    bh_dbg_add_tri_internal(dd, p010, p111, p110, color, duration_s);
-    /* -Z */
+    const vec3 p000 = {mn.x, mn.y, mn.z};
+    const vec3 p100 = {mx.x, mn.y, mn.z};
+    const vec3 p010 = {mn.x, mx.y, mn.z};
+    const vec3 p110 = {mx.x, mx.y, mn.z};
+
+    const vec3 p001 = {mn.x, mn.y, mx.z};
+    const vec3 p101 = {mx.x, mn.y, mx.z};
+    const vec3 p011 = {mn.x, mx.y, mx.z};
+    const vec3 p111 = {mx.x, mx.y, mx.z};
+
     bh_dbg_add_tri_internal(dd, p000, p010, p110, color, duration_s);
     bh_dbg_add_tri_internal(dd, p000, p110, p100, color, duration_s);
-    /* +Z */
+
     bh_dbg_add_tri_internal(dd, p001, p101, p111, color, duration_s);
     bh_dbg_add_tri_internal(dd, p001, p111, p011, color, duration_s);
+
+    bh_dbg_add_tri_internal(dd, p000, p100, p101, color, duration_s);
+    bh_dbg_add_tri_internal(dd, p000, p101, p001, color, duration_s);
+
+    bh_dbg_add_tri_internal(dd, p010, p011, p111, color, duration_s);
+    bh_dbg_add_tri_internal(dd, p010, p111, p110, color, duration_s);
+
+    bh_dbg_add_tri_internal(dd, p000, p001, p011, color, duration_s);
+    bh_dbg_add_tri_internal(dd, p000, p011, p010, color, duration_s);
+
+    bh_dbg_add_tri_internal(dd, p100, p110, p111, color, duration_s);
+    bh_dbg_add_tri_internal(dd, p100, p111, p101, color, duration_s);
 }

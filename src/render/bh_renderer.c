@@ -28,18 +28,10 @@ typedef struct BH_TransparentDraw
     float sort_key;
 } BH_TransparentDraw;
 
-typedef struct BH_TransparentQueue
-{
-    BH_TransparentDraw *items;
-    uint32_t count;
-    uint32_t cap;
-} BH_TransparentQueue;
-
 typedef struct BH_SceneSplitPassContext
 {
     BH_RenderDrawContext draw;
     vec3 camera_pos;
-    BH_TransparentQueue *transparent;
 } BH_SceneSplitPassContext;
 
 /* -----------------------------------------------------------------------------
@@ -238,28 +230,30 @@ static bool bh_renderer_ensure_depth_texture(BH_Renderer *r, uint32_t w, uint32_
    Internal Helpers: Transparency Queue
    ----------------------------------------------------------------------------- */
 
-static void bh_transparent_queue_free(BH_TransparentQueue *q)
+static BH_TransparentDraw *bh_transparent_items(BH_Renderer *r)
 {
-    if (q)
-    {
-        SDL_free(q->items);
-        *q = (BH_TransparentQueue){0};
-    }
+    return (BH_TransparentDraw *)r->transparent_items;
 }
 
-static bool bh_transparent_queue_push(BH_TransparentQueue *q, const BH_TransparentDraw *d)
+static void bh_transparent_reset(BH_Renderer *r)
 {
-    if (q->count >= q->cap)
+    r->transparent_count = 0;
+}
+
+static bool bh_transparent_push(BH_Renderer *r, const BH_TransparentDraw *d)
+{
+    if (r->transparent_count >= r->transparent_cap)
     {
-        uint32_t new_cap = (q->cap == 0) ? 64u : (q->cap * 2u);
+        uint32_t new_cap = (r->transparent_cap == 0) ? 64u : (r->transparent_cap * 2u);
         BH_TransparentDraw *new_items =
-            (BH_TransparentDraw *)SDL_realloc(q->items, (size_t)new_cap * sizeof(BH_TransparentDraw));
+            (BH_TransparentDraw *)SDL_realloc(r->transparent_items, (size_t)new_cap * sizeof(BH_TransparentDraw));
         if (!new_items)
             return false;
-        q->items = new_items;
-        q->cap = new_cap;
+        r->transparent_items = new_items;
+        r->transparent_cap = new_cap;
     }
-    q->items[q->count++] = *d;
+
+    bh_transparent_items(r)[r->transparent_count++] = *d;
     return true;
 }
 
@@ -306,14 +300,14 @@ static void bh_draw_scene_node_split(const BH_SceneNode *node, const mat4 *world
         const BH_Material *mat = node->material_override ? node->material_override : sm->material;
         const bool is_transparent = (mat && ((mat->flags & BH_MATERIAL_FLAG_TRANSPARENT) != 0));
 
-        if (is_transparent && ctx->transparent)
+        if (is_transparent)
         {
             const vec3 pos = {world->m[12], world->m[13], world->m[14]};
             const vec3 d = vec3_sub(pos, ctx->camera_pos);
 
             BH_TransparentDraw td = {
                 .mesh = mesh, .submesh = sm, .material = mat, .world = *world, .sort_key = vec3_lensq(d)};
-            (void)bh_transparent_queue_push(ctx->transparent, &td);
+            (void)bh_transparent_push(ctx->draw.renderer, &td);
             continue;
         }
 
@@ -322,13 +316,13 @@ static void bh_draw_scene_node_split(const BH_SceneNode *node, const mat4 *world
     }
 }
 
-static void bh_draw_transparent_queue(BH_RenderDrawContext *draw, const BH_TransparentQueue *q)
+static void bh_draw_transparent_queue(BH_RenderDrawContext *draw, const BH_TransparentDraw *items, uint32_t count)
 {
     const BH_ShaderProgram *prog = draw->program ? draw->program : &draw->renderer->program;
 
-    for (uint32_t i = 0; i < q->count; ++i)
+    for (uint32_t i = 0; i < count; ++i)
     {
-        const BH_TransparentDraw *td = &q->items[i];
+        const BH_TransparentDraw *td = &items[i];
         if (!td->mesh || !td->submesh)
             continue;
 
@@ -545,8 +539,12 @@ void BH_Renderer_Shutdown(BH_Renderer *r)
         {
             BH_GPU_ReleaseWindowFromDevice(r->device, r->window);
         }
-
         BH_GPU_DestroyDevice(r->device);
+    }
+
+    if (r->transparent_items)
+    {
+        SDL_free(r->transparent_items);
     }
     *r = (BH_Renderer){0};
 }
@@ -633,31 +631,31 @@ void BH_Renderer_RenderScene(BH_Renderer *r, const BH_Scene *scene, const mat4 *
 
         BH_GPU_DrawIndexedPrimitives(pass, r->skybox_mesh.index_count, 1, 0, 0, 0);
     }
-
+    
     /* Opaque Pass */
     BH_GPU_BindGraphicsPipeline(pass, r->program.pipeline);
     bh_push_scene_fragment_uniforms(r, cmd, scene, camera_pos);
 
-    BH_TransparentQueue transparent = {0};
+    bh_transparent_reset(r);
+
     BH_SceneSplitPassContext split = {
         .draw = {.renderer = r, .cmd = cmd, .pass = pass, .view_proj = view_proj, .program = &r->program},
-        .camera_pos = camera_pos,
-        .transparent = &transparent};
+        .camera_pos = camera_pos};
 
     BH_Scene_Traverse(scene, alpha, bh_draw_scene_node_split, &split);
 
     /* Transparent Pass */
-    if (transparent.count > 0)
+    if (r->transparent_count > 0)
     {
-        qsort(transparent.items, transparent.count, sizeof(BH_TransparentDraw), bh_cmp_transparent_back_to_front);
+        BH_TransparentDraw *items = bh_transparent_items(r);
+        qsort(items, r->transparent_count, sizeof(BH_TransparentDraw), bh_cmp_transparent_back_to_front);
 
         BH_GPU_BindGraphicsPipeline(pass, r->program_transparent.pipeline);
         bh_push_scene_fragment_uniforms(r, cmd, scene, camera_pos);
 
         BH_RenderDrawContext tctx = split.draw;
-        bh_draw_transparent_queue(&tctx, &transparent);
+        bh_draw_transparent_queue(&tctx, items, r->transparent_count);
     }
-    bh_transparent_queue_free(&transparent);
 
     /* Hook: Draw (Overlays/UI) */
     for (uint32_t i = 0; i < r->hook_count; ++i)

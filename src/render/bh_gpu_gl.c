@@ -104,6 +104,10 @@ typedef struct BH_GLUniformBuffer
     uint32_t capacity;
 } BH_GLUniformBuffer;
 
+typedef struct BH_GLCommandBuffer BH_GLCommandBuffer;
+typedef struct BH_GLCopyPass BH_GLCopyPass;
+typedef struct BH_GLRenderPass BH_GLRenderPass;
+
 typedef struct BH_GLDevice
 {
     bool debug;
@@ -119,12 +123,17 @@ typedef struct BH_GLDevice
     BH_GLUniformBuffer vs_ubos[BH_GPU_MAX_UNIFORM_SLOTS];
     BH_GLUniformBuffer fs_ubos[BH_GPU_MAX_UNIFORM_SLOTS];
 
+    BH_GLCommandBuffer *free_cmds;
+    BH_GLCopyPass *free_copy_passes;
+    BH_GLRenderPass *free_render_passes;
+
     bool scissor_enabled;
 } BH_GLDevice;
 
 typedef struct BH_GLCommandBuffer
 {
     BH_GLDevice *dev;
+    struct BH_GLCommandBuffer *next;
     bool wants_present;
     uint32_t fb_w;
     uint32_t fb_h;
@@ -133,12 +142,14 @@ typedef struct BH_GLCommandBuffer
 typedef struct BH_GLCopyPass
 {
     BH_GLCommandBuffer *cmd;
+    struct BH_GLCopyPass *next;
 } BH_GLCopyPass;
 
 typedef struct BH_GLRenderPass
 {
     BH_GLCommandBuffer *cmd;
     BH_GLDevice *dev;
+    struct BH_GLRenderPass *next;
 
     GLuint fbo;
     bool owns_fbo;
@@ -544,6 +555,27 @@ static void bh_gl_destroy_device(BH_GPUDevice *device)
     if (!dev)
         return;
 
+    while (dev->free_render_passes)
+    {
+        BH_GLRenderPass *n = dev->free_render_passes->next;
+        SDL_free(dev->free_render_passes);
+        dev->free_render_passes = n;
+    }
+
+    while (dev->free_copy_passes)
+    {
+        BH_GLCopyPass *n = dev->free_copy_passes->next;
+        SDL_free(dev->free_copy_passes);
+        dev->free_copy_passes = n;
+    }
+
+    while (dev->free_cmds)
+    {
+        BH_GLCommandBuffer *n = dev->free_cmds->next;
+        SDL_free(dev->free_cmds);
+        dev->free_cmds = n;
+    }
+
     if (dev->window && dev->glctx)
     {
         (void)SDL_GL_MakeCurrent(dev->window, dev->glctx);
@@ -674,6 +706,16 @@ static void bh_gl_wait_for_idle(BH_GPUDevice *device)
     glFinish();
 }
 
+static void bh_gl_recycle_command_buffer(BH_GLCommandBuffer *c)
+{
+    BH_GLDevice *dev = c->dev;
+    c->wants_present = false;
+    c->fb_w = 0;
+    c->fb_h = 0;
+    c->next = dev->free_cmds;
+    dev->free_cmds = c;
+}
+
 static BH_GPUCommandBuffer *bh_gl_acquire_command_buffer(BH_GPUDevice *device)
 {
     BH_GLDevice *dev = (BH_GLDevice *)device;
@@ -683,7 +725,19 @@ static BH_GPUCommandBuffer *bh_gl_acquire_command_buffer(BH_GPUDevice *device)
         return NULL;
     }
 
-    BH_GLCommandBuffer *cmd = (BH_GLCommandBuffer *)SDL_calloc(1, sizeof(BH_GLCommandBuffer));
+    BH_GLCommandBuffer *cmd = dev->free_cmds;
+    if (cmd)
+    {
+        dev->free_cmds = cmd->next;
+        cmd->next = NULL;
+        cmd->wants_present = false;
+        cmd->fb_w = 0;
+        cmd->fb_h = 0;
+        cmd->dev = dev;
+        return (BH_GPUCommandBuffer *)cmd;
+    }
+
+    cmd = (BH_GLCommandBuffer *)SDL_calloc(1, sizeof(BH_GLCommandBuffer));
     if (!cmd)
     {
         bh_gl_set_error("OpenGL: out of memory");
@@ -696,9 +750,14 @@ static BH_GPUCommandBuffer *bh_gl_acquire_command_buffer(BH_GPUDevice *device)
 
 static void bh_gl_cancel_command_buffer(BH_GPUCommandBuffer *cmd)
 {
-    if (!cmd)
+    BH_GLCommandBuffer *c = (BH_GLCommandBuffer *)cmd;
+    if (!c || !c->dev)
+    {
+        if (c)
+            SDL_free(c);
         return;
-    SDL_free(cmd);
+    }
+    bh_gl_recycle_command_buffer(c);
 }
 
 static bool bh_gl_submit_command_buffer(BH_GPUCommandBuffer *cmd)
@@ -706,8 +765,6 @@ static bool bh_gl_submit_command_buffer(BH_GPUCommandBuffer *cmd)
     BH_GLCommandBuffer *c = (BH_GLCommandBuffer *)cmd;
     if (!c || !c->dev)
     {
-        // Don't set error here if c is null, just bail,
-        // though strictly speaking this is an invalid call.
         if (c)
             SDL_free(c);
         return false;
@@ -719,7 +776,7 @@ static bool bh_gl_submit_command_buffer(BH_GPUCommandBuffer *cmd)
     if (!SDL_GL_MakeCurrent(dev->window, dev->glctx))
     {
         bh_gl_set_error("Submit: SDL_GL_MakeCurrent failed: %s", SDL_GetError());
-        SDL_free(c);
+        bh_gl_recycle_command_buffer(c);
         return false;
     }
 
@@ -732,7 +789,7 @@ static bool bh_gl_submit_command_buffer(BH_GPUCommandBuffer *cmd)
         {
             bh_gl_set_error("Submit: Read FBO (Swapchain) incomplete: 0x%04x", status);
             glBindFramebuffer(GL_FRAMEBUFFER, 0); // Restore
-            SDL_free(c);
+            bh_gl_recycle_command_buffer(c);
             return false;
         }
 
@@ -759,7 +816,7 @@ static bool bh_gl_submit_command_buffer(BH_GPUCommandBuffer *cmd)
         if (err != GL_NO_ERROR)
         {
             bh_gl_set_error("Submit: glBlitFramebuffer failed: 0x%04x (Dim: %dx%d)", err, c->fb_w, c->fb_h);
-            SDL_free(c);
+            bh_gl_recycle_command_buffer(c);
             return false;
         }
 
@@ -767,12 +824,11 @@ static bool bh_gl_submit_command_buffer(BH_GPUCommandBuffer *cmd)
         if (!SDL_GL_SwapWindow(dev->window))
         {
             bh_gl_set_error("Submit: SDL_GL_SwapWindow failed: %s", SDL_GetError());
-            SDL_free(c);
+            bh_gl_recycle_command_buffer(c);
             return false;
         }
     }
-
-    SDL_free(c);
+    bh_gl_recycle_command_buffer(c);
     return true;
 }
 
@@ -828,7 +884,18 @@ static BH_GPUCopyPass *bh_gl_begin_copy_pass(BH_GPUCommandBuffer *cmd)
     if (!c || !c->dev)
         return NULL;
 
-    BH_GLCopyPass *pass = (BH_GLCopyPass *)SDL_calloc(1, sizeof(BH_GLCopyPass));
+    BH_GLDevice *dev = c->dev;
+
+    BH_GLCopyPass *pass = dev->free_copy_passes;
+    if (pass)
+    {
+        dev->free_copy_passes = pass->next;
+        pass->next = NULL;
+        pass->cmd = c;
+        return (BH_GPUCopyPass *)pass;
+    }
+
+    pass = (BH_GLCopyPass *)SDL_calloc(1, sizeof(BH_GLCopyPass));
     if (!pass)
     {
         bh_gl_set_error("OpenGL: out of memory");
@@ -841,9 +908,18 @@ static BH_GPUCopyPass *bh_gl_begin_copy_pass(BH_GPUCommandBuffer *cmd)
 
 static void bh_gl_end_copy_pass(BH_GPUCopyPass *pass)
 {
-    if (!pass)
+    BH_GLCopyPass *p = (BH_GLCopyPass *)pass;
+    if (!p || !p->cmd || !p->cmd->dev)
+    {
+        if (p)
+            SDL_free(p);
         return;
-    SDL_free(pass);
+    }
+
+    BH_GLDevice *dev = p->cmd->dev;
+    p->cmd = NULL;
+    p->next = dev->free_copy_passes;
+    dev->free_copy_passes = p;
 }
 
 static BH_GPURenderPass *bh_gl_begin_render_pass(BH_GPUCommandBuffer *cmd, const BH_GPUColorTargetInfo *color_targets,
@@ -867,11 +943,20 @@ static BH_GPURenderPass *bh_gl_begin_render_pass(BH_GPUCommandBuffer *cmd, const
         return NULL;
     }
 
-    BH_GLRenderPass *pass = (BH_GLRenderPass *)SDL_calloc(1, sizeof(BH_GLRenderPass));
-    if (!pass)
+    BH_GLRenderPass *pass = dev->free_render_passes;
+    if (pass)
     {
-        bh_gl_set_error("OpenGL: out of memory");
-        return NULL;
+        dev->free_render_passes = pass->next;
+        memset(pass, 0, sizeof(*pass));
+    }
+    else
+    {
+        pass = (BH_GLRenderPass *)SDL_calloc(1, sizeof(BH_GLRenderPass));
+        if (!pass)
+        {
+            bh_gl_set_error("OpenGL: out of memory");
+            return NULL;
+        }
     }
 
     pass->cmd = c;
@@ -930,7 +1015,11 @@ static BH_GPURenderPass *bh_gl_begin_render_pass(BH_GPUCommandBuffer *cmd, const
         {
             glDeleteFramebuffers(1, &pass->fbo);
         }
-        SDL_free(pass);
+        pass->dev = dev;
+        memset(pass, 0, sizeof(*pass));
+        pass->dev = dev;
+        pass->next = dev->free_render_passes;
+        dev->free_render_passes = pass;
         return NULL;
     }
 
@@ -986,15 +1075,23 @@ static BH_GPURenderPass *bh_gl_begin_render_pass(BH_GPUCommandBuffer *cmd, const
 static void bh_gl_end_render_pass(BH_GPURenderPass *pass)
 {
     BH_GLRenderPass *p = (BH_GLRenderPass *)pass;
-    if (!p)
+    if (!p || !p->dev)
+    {
+        if (p)
+            SDL_free(p);
         return;
+    }
 
     if (p->owns_fbo && p->fbo)
     {
         glDeleteFramebuffers(1, &p->fbo);
     }
 
-    SDL_free(p);
+    BH_GLDevice *dev = p->dev;
+    memset(p, 0, sizeof(*p));
+    p->dev = dev;
+    p->next = dev->free_render_passes;
+    dev->free_render_passes = p;
 }
 
 static void bh_gl_set_viewport(BH_GPURenderPass *pass, const BH_GPUViewport *vp)

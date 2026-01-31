@@ -552,13 +552,14 @@ void BH_Game_Update(BH_Game *game, double frame_dt_s)
 
     const float alpha = (float)(game->accumulator / game->fixed_dt);
     vec3 view_offset = {0, 0, 0};
+    vec3 node_pos = {0, 0, 0};
 
     if (game->player_node && game->player_node->entity)
     {
         view_offset = BH_Entity_GetViewOffset(game->player_node->entity, &game->entity_sv);
+        node_pos = bh_node_lerp_position(game->player_node, alpha);
     }
 
-    const vec3 node_pos = bh_node_lerp_position(game->player_node, alpha);
     const vec3 cam_pos = vec3_add(node_pos, view_offset);
     const mat4 view_proj = bh_build_viewproj(game->window, cam_pos, game->input.view_angles_frame_deg);
 

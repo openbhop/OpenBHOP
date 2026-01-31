@@ -71,6 +71,10 @@ typedef struct BH_Renderer
     BH_TextureManager textures;
     BH_MaterialManager materials;
 
+    void *transparent_items;
+    uint32_t transparent_count;
+    uint32_t transparent_cap;
+
     BH_RenderPassHooks hooks[16];
     uint32_t hook_count;
 } BH_Renderer;

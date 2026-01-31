@@ -4,10 +4,9 @@
 
 #pragma once
 
+#include "../core/bh_core.h"
 #include "../math/bh_color.h"
 #include "../math/bh_math.h"
-#include "../render/bh_gpu.h"
-#include "../render/bh_shader_program.h"
 
 typedef struct BH_Renderer BH_Renderer;
 typedef struct BH_Arena BH_Arena;
@@ -16,12 +15,6 @@ typedef struct BH_Arena BH_Arena;
 extern "C"
 {
 #endif
-
-    /* -----------------------------------------------------------------------------
-       Debug Draw API
-       Queue primitives for late-pass rendering.
-       Duration: < 0 (infinite), 0 (one frame), > 0 (seconds).
-       ----------------------------------------------------------------------------- */
 
     typedef enum BH_DBG_DepthMode
     {
@@ -62,22 +55,7 @@ extern "C"
 
     typedef struct BH_DebugDraw
     {
-        BH_GPUDevice *device;
-
-        BH_ShaderProgram line_depth;
-        BH_ShaderProgram line_always;
-        BH_ShaderProgram tri_depth;
-        BH_ShaderProgram tri_always;
-
-        BH_GPUBuffer *vb_line_depth;
-        BH_GPUBuffer *vb_line_always;
-        BH_GPUBuffer *vb_tri_depth;
-        BH_GPUBuffer *vb_tri_always;
-
-        uint32_t vb_line_depth_bytes;
-        uint32_t vb_line_always_bytes;
-        uint32_t vb_tri_depth_bytes;
-        uint32_t vb_tri_always_bytes;
+        void *render;
 
         BH_DbgVertex *cpu_line_depth;
         BH_DbgVertex *cpu_line_always;
@@ -107,25 +85,11 @@ extern "C"
 
         BH_DbgState state_stack[16];
         uint32_t state_top;
-
-        BH_GPUTransferBuffer **pending_tbufs;
-        uint32_t pending_tbuf_count;
-        uint32_t pending_tbuf_cap;
-
-        bool logged_missing_mvp;
     } BH_DebugDraw;
-
-    /* -----------------------------------------------------------------------------
-       System Lifecycle
-       ----------------------------------------------------------------------------- */
 
     bool BH_DebugDraw_Init(BH_DebugDraw *dd, BH_Renderer *renderer, const char *asset_root, BH_Arena *permanent_arena);
     void BH_DebugDraw_Shutdown(BH_DebugDraw *dd);
     void BH_DebugDraw_Tick(BH_DebugDraw *dd, float dt_s);
-
-    /* -----------------------------------------------------------------------------
-       Context & State
-       ----------------------------------------------------------------------------- */
 
     void BH_DebugDraw_SetActive(BH_DebugDraw *dd);
     BH_DebugDraw *BH_DebugDraw_GetActive(void);
@@ -136,10 +100,6 @@ extern "C"
     BH_DBG_DepthMode BH_DebugDraw_GetDepthMode(void);
     void BH_DebugDraw_SetDefaultColor(color4f color);
     color4f BH_DebugDraw_GetDefaultColor(void);
-
-    /* -----------------------------------------------------------------------------
-       Primitives
-       ----------------------------------------------------------------------------- */
 
     void BH_DebugDraw_DrawLine(vec3 a, vec3 b, color4f color, float duration_s);
     void BH_DebugDraw_DrawTriangle(vec3 a, vec3 b, vec3 c, color4f color, float duration_s);
